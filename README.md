@@ -1,5 +1,5 @@
 # CodeLab Monitoring Stack
-> Loki + Grafana + Prometheus + Alertmanager + MinIO  
+> Loki + Grafana + Prometheus + Alertmanager  
 > Serveur : Peramix (8 vCPU / 24 GB RAM / 200 GB NVMe)
 
 ---
@@ -20,7 +20,7 @@ Tous tes serveurs (OCI, Hostinger, etc.)
       │  Prometheus     (métriques)  │
       │  Grafana        (UI)         │
       │  Alertmanager   (alertes)    │
-      │  MinIO          (stockage)   │
+      │  (volumes Docker sur disque) │
       │  Portainer      (Docker UI)  │
       └──────────────────────────────┘
 ```
@@ -51,7 +51,6 @@ nano .env   # Remplir toutes les valeurs
 |----------|-------------|
 | `GRAFANA_DOMAIN` | `monitoring.codelab.bj` |
 | `GRAFANA_ADMIN_PASSWORD` | Mot de passe admin Grafana |
-| `MINIO_ROOT_PASSWORD` | Mot de passe MinIO |
 | `LOKI_PASSWORD_PAYGATE` | Mot de passe Loki pour PayGate |
 | `SMTP_*` | Config email pour les alertes |
 | `TELEGRAM_BOT_TOKEN` | Token bot Telegram |
@@ -215,7 +214,6 @@ bash scripts/manage.sh test-alert
 | Loki | 4 GB |
 | Prometheus | 2 GB |
 | Grafana | 1 GB |
-| MinIO | 2 GB |
 | Alertmanager | 256 MB |
 | Promtail | 256 MB |
 | Node Exporter | 128 MB |
@@ -223,8 +221,8 @@ bash scripts/manage.sh test-alert
 | Portainer | 256 MB |
 | Nginx Proxy | 256 MB |
 | Relais Telegram | 128 MB |
-| **Total** | **~10.6 GB** |
-| **Libre** | **~13.4 GB** |
+| **Total** | **~8.6 GB** |
+| **Libre** | **~15.4 GB** |
 
 ---
 

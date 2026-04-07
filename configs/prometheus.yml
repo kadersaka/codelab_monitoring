@@ -57,14 +57,6 @@ scrape_configs:
         labels:
           server: peramix
 
-  # ── MinIO ──────────────────────────────────────────────────────
-  - job_name: minio
-    metrics_path: /minio/v2/metrics/cluster
-    static_configs:
-      - targets: ['minio:9000']
-        labels:
-          server: peramix
-
   # ══════════════════════════════════════════════════════════════
   # SERVEURS DISTANTS
   # Ajouter chaque nouveau serveur ici

@@ -145,7 +145,7 @@ log_info "Attente du démarrage des services (60 secondes)..."
 sleep 60
 
 log_info "Vérification de la santé des services..."
-SERVICES=("loki" "prometheus" "grafana" "minio" "alertmanager")
+SERVICES=("loki" "prometheus" "grafana" "alertmanager")
 ALL_OK=true
 
 for service in "${SERVICES[@]}"; do

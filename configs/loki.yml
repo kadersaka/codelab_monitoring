@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════
-# Loki Configuration
-# Backend : MinIO (stockage objet local)
+# Loki — chunks + index sur le disque du VPS (volume Docker loki_data)
+# Pas de S3 / MinIO : tout est sous /loki dans le conteneur
 # Auth : multi-tenant activé
 # ═══════════════════════════════════════════════════════════════
 
@@ -38,32 +38,26 @@ schema_config:
   configs:
     - from: 2024-01-01
       store: boltdb-shipper
-      object_store: s3
+      object_store: filesystem
       schema: v12
       index:
         prefix: loki_index_
         period: 24h
 
-# ── Stockage : MinIO via protocole S3 ───────────────────────────
+# ── Stockage : fichiers locaux (/loki = volume nommé loki_data sur le VPS)
 storage_config:
   boltdb_shipper:
     active_index_directory: /loki/index
     cache_location: /loki/cache
     cache_ttl: 24h
-    shared_store: s3
-  aws:
-    endpoint: http://minio:9000
-    region: us-east-1
-    bucketnames: loki
-    access_key_id: ${MINIO_ROOT_USER}
-    secret_access_key: ${MINIO_ROOT_PASSWORD}
-    s3forcepathstyle: true
-    insecure: true
+    shared_store: filesystem
+  filesystem:
+    directory: /loki/chunks
 
 # ── Compacteur + Rétention ──────────────────────────────────────
 compactor:
   working_directory: /loki/compactor
-  shared_store: s3
+  shared_store: filesystem
   compaction_interval: 10m
   retention_enabled: true
   retention_delete_delay: 2h
@@ -71,24 +65,18 @@ compactor:
 
 # ── Limites globales ─────────────────────────────────────────────
 limits_config:
-  # Rétention par défaut (90 jours)
   retention_period: 90d
-  # Ingestion
   ingestion_rate_mb: 16
   ingestion_burst_size_mb: 32
-  # Requêtes
   max_query_series: 5000
   max_query_lookback: 365d
   max_query_length: 721h
   max_entries_limit_per_query: 50000
-  # Labels
   max_label_names_per_series: 30
   max_label_value_length: 4096
-  # Streams
   max_streams_per_user: 10000
-  # Rejeter les logs trop anciens (anti-erreurs Promtail)
   reject_old_samples: true
-  reject_old_samples_max_age: 168h  # 7 jours
+  reject_old_samples_max_age: 168h
 
 # ── Ruler (alertes Loki) ────────────────────────────────────────
 ruler:
@@ -121,5 +109,3 @@ frontend:
 # ── Cache ───────────────────────────────────────────────────────
 chunk_store_config:
   max_look_back_period: 365d
-
-# table_manager retiré : rétention assurée par compactor + limits_config (Loki 2.9+ / boltdb-shipper).

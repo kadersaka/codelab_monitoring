@@ -7,67 +7,12 @@ networks:
 
 volumes:
   loki_data:
-  minio_data:
   prometheus_data:
   grafana_data:
   alertmanager_data:
   portainer_data:
 
 services:
-
-  # ═══════════════════════════════════════════════════
-  # MINIO — Stockage objet pour Loki
-  # ═══════════════════════════════════════════════════
-  minio:
-    image: minio/minio:RELEASE.2024-01-01T16-36-33Z
-    container_name: minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_PROMETHEUS_AUTH_TYPE: public
-      # Alias « local » pour mc (healthcheck officiel MinIO, sans curl dans le PATH)
-      MC_HOST_local: http://127.0.0.1:9000
-    volumes:
-      - minio_data:/data
-    ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
-    networks:
-      - monitoring
-    restart: unless-stopped
-    # Images MinIO récentes : plus de curl dans le PATH ; voir minio/minio#18371 — utiliser « mc ready »
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 30s
-      timeout: 20s
-      retries: 8
-      start_period: 90s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-
-  # Crée le bucket Loki au démarrage
-  minio_init:
-    image: minio/mc:latest
-    container_name: minio_init
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-      /usr/bin/mc mb --ignore-existing myminio/loki;
-      /usr/bin/mc mb --ignore-existing myminio/loki-ruler;
-      /usr/bin/mc anonymous set public myminio/loki;
-      echo 'MinIO buckets créés.';
-      exit 0;
-      "
-    networks:
-      - monitoring
-    restart: on-failure
 
   # ═══════════════════════════════════════════════════
   # LOKI — Agrégation de logs
@@ -77,10 +22,6 @@ services:
     container_name: loki
     command:
       - -config.file=/etc/loki/config.yml
-      - -config.expand-env=true
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - ./configs/loki.yml:/etc/loki/config.yml:ro
       - ./configs/retention-overrides.yml:/etc/loki/retention-overrides.yml:ro
@@ -89,9 +30,6 @@ services:
       - "127.0.0.1:3100:3100"
     networks:
       - monitoring
-    depends_on:
-      minio:
-        condition: service_healthy
     restart: unless-stopped
     # Pas de healthcheck HTTP : l’image Loki est minimale (wget/curl souvent absents ou incompatibles).
     deploy:
