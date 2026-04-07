@@ -98,6 +98,7 @@ post_test_alert_to_alertmanager() {
 show_help() {
     echo ""
     echo "CodeLab Monitoring — Commandes disponibles :"
+    echo "  (docker compose : bash scripts/dc ...  ex. bash scripts/dc ps)"
     echo ""
     echo "  bash scripts/manage.sh status        Statut de tous les services"
     echo "  bash scripts/manage.sh logs [svc]    Logs d'un service (ex: loki, grafana)"

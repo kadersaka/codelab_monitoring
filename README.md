@@ -265,7 +265,10 @@ Puis :
 ```bash
 cd /opt/codelab_monitoring
 bash scripts/manage.sh update
+bash scripts/dc ps
 ```
+
+(`dc` dans le README = exécute **`bash scripts/dc`**, pas la commande système `dc` des calculatrices.)
 
 ### Commandes utiles
 

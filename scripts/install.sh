@@ -185,5 +185,5 @@ echo ""
 if $ALL_OK; then
     log_success "Tous les services sont opérationnels."
 else
-    log_warning "Certains services ne sont pas encore prêts. Lance : cd ${SCRIPT_ROOT} && dc ps"
+    log_warning "Certains services ne sont pas encore prêts. Lance : bash ${SCRIPT_ROOT}/scripts/dc ps"
 fi
