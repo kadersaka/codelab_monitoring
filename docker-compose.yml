@@ -104,8 +104,9 @@ services:
       - '--web.external-url=https://monitoring.codelab.bj/alertmanager'
     volumes:
       - ./configs/alertmanager.yml:/etc/alertmanager/config.yml:ro
-      - ./secrets/alertmanager_smtp_password.txt:/etc/alertmanager/smtp_password:ro
       - alertmanager_data:/alertmanager
+    secrets:
+      - alertmanager_smtp_password
     ports:
       - "127.0.0.1:9093:9093"
     networks:
@@ -310,3 +311,5 @@ services:
 secrets:
   portainer_password:
     file: ./secrets/portainer_password.txt
+  alertmanager_smtp_password:
+    file: ./secrets/alertmanager_smtp_password.txt
