@@ -6,6 +6,10 @@
 
 auth_enabled: true
 
+# Overrides par tenant (fichier avec clé racine « overrides: »)
+runtime_config:
+  file: /etc/loki/retention-overrides.yml
+
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
@@ -84,8 +88,6 @@ limits_config:
   # Rejeter les logs trop anciens (anti-erreurs Promtail)
   reject_old_samples: true
   reject_old_samples_max_age: 168h  # 7 jours
-  # Rétention / quotas par tenant (X-Scope-OrgID) — doit être sous limits_config en Loki 2.9+
-  per_tenant_override_config: /etc/loki/retention-overrides.yml
 
 # ── Ruler (alertes Loki) ────────────────────────────────────────
 ruler:

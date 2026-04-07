@@ -102,7 +102,7 @@ groups:
           category: application
           project: paygate
         annotations:
-          summary: "🔴 PayGate — Erreurs 5xx ({{ $value | printf \"%.2f\" }}/s)"
+          summary: "🔴 PayGate — Erreurs 5xx ({{ printf \"%.2f\" $value }}/s)"
           description: |
             Taux d'erreurs 5xx anormal sur l'API PayGate.
             Vue concernée : {{ $labels.view }}
@@ -118,10 +118,8 @@ groups:
           category: performance
           project: paygate
         annotations:
-          summary: "⚠️ PayGate — Latence P95 élevée ({{ $value | printf \"%.2f\" }}s)"
-          description: |
-            95% des requêtes prennent plus de {{ $value | printf \"%.2f\" }}s.
-            Vérifier PostgreSQL, Redis et les appels API externes.
+          summary: "⚠️ PayGate — Latence P95 élevée ({{ printf \"%.2f\" $value }}s)"
+          description: "95% des requêtes prennent plus de {{ printf \"%.2f\" $value }}s. Vérifier PostgreSQL, Redis et les appels API externes."
 
       - alert: RequêtesBDLentes
         expr: |
@@ -132,7 +130,7 @@ groups:
           category: performance
           project: paygate
         annotations:
-          summary: "⚠️ PayGate — Volume de requêtes SQL élevé ({{ $value | printf \"%.0f\" }}/s)"
+          summary: "⚠️ PayGate — Volume de requêtes SQL élevé ({{ printf \"%.0f\" $value }}/s)"
 
   - name: paygate.celery
     rules:
@@ -182,7 +180,7 @@ groups:
           category: security
           project: paygate
         annotations:
-          summary: "⚠️ PayGate — Tentatives auth échouées élevées ({{ $value | printf \"%.1f\" }}/s)"
+          summary: "⚠️ PayGate — Tentatives auth échouées élevées ({{ printf \"%.1f\" $value }}/s)"
           description: |
             Taux anormal de réponses 401. Possible attaque par force brute.
             Vérifier les logs sécurité : {logger="paygate.security"}
@@ -199,5 +197,5 @@ groups:
           category: security
           project: paygate
         annotations:
-          summary: "⚠️ PayGate — Rate limiting déclenché ({{ $value | printf \"%.1f\" }}/s)"
+          summary: "⚠️ PayGate — Rate limiting déclenché ({{ printf \"%.1f\" $value }}/s)"
           description: "Des clients se font bloquer par le rate limiter. Possible abus ou bug client."
