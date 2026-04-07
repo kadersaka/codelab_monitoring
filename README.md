@@ -222,8 +222,17 @@ bash scripts/manage.sh test-alert
 | cAdvisor | 256 MB |
 | Portainer | 256 MB |
 | Nginx Proxy | 256 MB |
-| **Total** | **~10.5 GB** |
-| **Libre** | **~13.5 GB** |
+| Relais Telegram | 128 MB |
+| **Total** | **~10.6 GB** |
+| **Libre** | **~13.4 GB** |
+
+---
+
+## Telegram (Alertmanager)
+
+Les alertes **`severity: critical`** (receivers `paygate_critical` et `critical_all`) envoient un **email** et appellent le service Docker **`alertmanager_telegram`**, qui poste sur l’API Telegram. Configure **`TELEGRAM_BOT_TOKEN`** et **`TELEGRAM_CHAT_ID`** dans **`.env`**, puis redémarre : `docker compose up -d alertmanager_telegram alertmanager`.
+
+Pour les alertes **Grafana** (optionnel), ajoute un canal **Telegram** dans l’interface Grafana avec le même bot.
 
 ---
 

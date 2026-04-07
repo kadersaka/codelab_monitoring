@@ -103,12 +103,8 @@ receivers:
         headers:
           Subject: '🔴 [PayGate CRITIQUE] {{ .GroupLabels.alertname }}'
     webhook_configs:
-      - url: 'http://localhost:9087/alert'
+      - url: 'http://alertmanager_telegram:8080/alerts'
         send_resolved: true
-        http_config:
-          basic_auth:
-            username: alertmanager
-            password: 'TELEGRAM_WEBHOOK_SECRET'
 
   # Toutes alertes critiques
   - name: critical_all
@@ -118,7 +114,7 @@ receivers:
         headers:
           Subject: '🔴 [CRITIQUE] {{ .GroupLabels.alertname }} — {{ .GroupLabels.server }}'
     webhook_configs:
-      - url: 'http://localhost:9087/alert'
+      - url: 'http://alertmanager_telegram:8080/alerts'
         send_resolved: true
 
   # Alertes sécurité

@@ -186,6 +186,24 @@ services:
           cpus: '0.2'
 
   # ═══════════════════════════════════════════════════
+  # TELEGRAM — Webhook Alertmanager → API Telegram (token dans .env)
+  # ═══════════════════════════════════════════════════
+  alertmanager_telegram:
+    image: enmanuelmoreira/alertmanager-telegram:edge
+    container_name: alertmanager_telegram
+    environment:
+      TELEGRAM_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+    networks:
+      - monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # ═══════════════════════════════════════════════════
   # GRAFANA — Visualisation
   # ═══════════════════════════════════════════════════
   grafana:
