@@ -61,12 +61,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Envoie une alerte de test à Alertmanager (API v2 — v1 supprimée / 404 selon versions).
+# API sous /alertmanager (dérivé de --web.external-url=…/alertmanager dans docker-compose).
+ALERTMANAGER_API_V2="${ALERTMANAGER_API_V2:-http://127.0.0.1:9093/alertmanager/api/v2/alerts}"
+
+# Envoie une alerte de test à Alertmanager (API v2).
 post_test_alert_to_alertmanager() {
     local severity="$1"
     local tmp http_code
     tmp=$(mktemp)
-    if ! http_code=$(curl -sS -o "$tmp" -w "%{http_code}" -X POST http://127.0.0.1:9093/api/v2/alerts \
+    if ! http_code=$(curl -sS -o "$tmp" -w "%{http_code}" -X POST "${ALERTMANAGER_API_V2}" \
         -H 'Content-Type: application/json' \
         -d "[{
             \"labels\": {
@@ -80,7 +83,7 @@ post_test_alert_to_alertmanager() {
             }
         }]"); then
         rm -f "$tmp"
-        echo -e "${RED}Échec : impossible de joindre Alertmanager sur http://127.0.0.1:9093${NC}" >&2
+        echo -e "${RED}Échec : impossible de joindre Alertmanager (${ALERTMANAGER_API_V2})${NC}" >&2
         echo "  → Lance la stack sur ce serveur : bash scripts/manage.sh update" >&2
         echo "  → Ou exécute ce script sur le VPS où tourne le monitoring." >&2
         return 1

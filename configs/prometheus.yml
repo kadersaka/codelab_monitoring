@@ -20,7 +20,8 @@ rule_files:
 # ── Alertmanager ────────────────────────────────────────────────
 alerting:
   alertmanagers:
-    - static_configs:
+    - path_prefix: /alertmanager
+      static_configs:
         - targets: ['alertmanager:9093']
       timeout: 10s
 
