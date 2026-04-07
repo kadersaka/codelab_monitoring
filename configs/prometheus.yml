@@ -72,26 +72,23 @@ scrape_configs:
   # ══════════════════════════════════════════════════════════════
 
   # ── Node Exporter — Serveur OCI PayGate ───────────────────────
-  - job_name: node_oci_paygate
-    static_configs:
-      - targets: ['<IP_SERVEUR_OCI>:9100']
-        labels:
-          server: oci-paygate
-          project: paygate
-          role: application
-    # Basic auth si tu sécurises node_exporter avec un reverse proxy
-    # basic_auth:
-    #   username: prometheus
-    #   password: motdepasse
+  # Décommente et remplace l’IP quand Node Exporter est en place (hôte valide obligatoire).
+  # - job_name: node_oci_paygate
+  #   static_configs:
+  #     - targets: ['A.B.C.D:9100']
+  #       labels:
+  #         server: oci-paygate
+  #         project: paygate
+  #         role: application
 
   # ── Node Exporter — Serveur Hostinger Projet B ────────────────
-  - job_name: node_hostinger_projetb
-    static_configs:
-      - targets: ['<IP_SERVEUR_HOSTINGER_B>:9100']
-        labels:
-          server: hostinger-projetb
-          project: projetb
-          role: application
+  # - job_name: node_hostinger_projetb
+  #   static_configs:
+  #     - targets: ['A.B.C.D:9100']
+  #       labels:
+  #         server: hostinger-projetb
+  #         project: projetb
+  #         role: application
 
   # ── Node Exporter — Serveur Hostinger Projet C ────────────────
   # - job_name: node_hostinger_projetc
@@ -107,18 +104,14 @@ scrape_configs:
   # ══════════════════════════════════════════════════════════════
 
   # ── Django PayGate ────────────────────────────────────────────
-  - job_name: django_paygate
-    static_configs:
-      - targets: ['<IP_SERVEUR_OCI>:8000']
-        labels:
-          server: oci-paygate
-          project: paygate
-          app: django
-    metrics_path: /metrics
-    # Si /metrics est protégé par Basic Auth
-    # basic_auth:
-    #   username: prometheus
-    #   password: motdepasse
+  # - job_name: django_paygate
+  #   static_configs:
+  #     - targets: ['A.B.C.D:8000']
+  #       labels:
+  #         server: oci-paygate
+  #         project: paygate
+  #         app: django
+  #   metrics_path: /metrics
 
   # ── Django Projet B ───────────────────────────────────────────
   # - job_name: django_projetb
