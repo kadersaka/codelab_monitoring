@@ -149,7 +149,7 @@ case "${1:-help}" in
         echo -e "${BLUE}Mise à jour des images Docker...${NC}"
         bash scripts/sync-secrets-from-env.sh
         dc pull
-        dc up -d
+        dc up -d --remove-orphans
         docker image prune -f
         echo -e "${GREEN}Mise à jour terminée.${NC}"
         ;;

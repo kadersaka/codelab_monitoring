@@ -138,7 +138,7 @@ bash scripts/sync-secrets-from-env.sh
 # ── Démarrage des services ───────────────────────────────────────
 log_info "Démarrage de la stack monitoring..."
 dc pull
-dc up -d
+dc up -d --remove-orphans
 
 # ── Vérification santé ───────────────────────────────────────────
 log_info "Attente du démarrage des services (60 secondes)..."
