@@ -9,8 +9,14 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 # Docker via Snap : le répertoire courant est « vide » → compose.yml introuvable ; chemins absolus
+# Si Snap bloque l’accès à /opt, l’erreur « no such file » persiste : installer Docker Engine (get.docker.com) ou retirer le snap.
 dc() {
-    docker compose -f "${ROOT_DIR}/docker-compose.yml" --project-directory "${ROOT_DIR}" "$@"
+    local compose_file="${ROOT_DIR}/docker-compose.yml"
+    if [[ ! -f "$compose_file" ]]; then
+        echo -e "${RED}Fichier introuvable : ${compose_file}${NC}" >&2
+        exit 1
+    fi
+    docker compose -f "$compose_file" --project-directory "${ROOT_DIR}" "$@"
 }
 
 # Préfixe des volumes = nom du projet Compose (ex. volume "foo_grafana_data" → foo)

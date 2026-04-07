@@ -9,7 +9,11 @@ set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_ROOT" || exit 1
-dc() { docker compose -f "${SCRIPT_ROOT}/docker-compose.yml" --project-directory "${SCRIPT_ROOT}" "$@"; }
+dc() {
+    local cf="${SCRIPT_ROOT}/docker-compose.yml"
+    [[ -f "$cf" ]] || log_error "Fichier introuvable : $cf"
+    docker compose -f "$cf" --project-directory "${SCRIPT_ROOT}" "$@"
+}
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

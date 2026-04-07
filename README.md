@@ -249,9 +249,29 @@ Pour les alertes **Grafana** (optionnel), ajoute un canal **Telegram** dans l’
 
 ## Dépannage
 
+### Docker Snap (`open ... docker-compose.yml: no such file` même avec un chemin absolu)
+
+Le **Docker Snap** ne peut souvent pas lire les fichiers sous `/opt`. Le fichier existe sur le disque, mais le client Compose du Snap ne le voit pas.
+
+**Recommandé en production** : remplacer le Snap par **Docker Engine** (paquet officiel) :
+
+```bash
+snap remove docker
+curl -fsSL https://get.docker.com | sh
+```
+
+Puis :
+
+```bash
+cd /opt/codelab_monitoring
+bash scripts/manage.sh update
+```
+
+### Commandes utiles
+
 ```bash
 # Voir les logs d'un service en erreur
-docker compose logs --tail=50 loki
+bash scripts/manage.sh logs loki
 
 # Vérifier que Loki accepte les logs
 curl -s http://localhost:3100/ready
