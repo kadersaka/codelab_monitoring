@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════════════
+# .gitignore — CodeLab Monitoring Stack
+# Ne pas versionner secrets, données locales ni certificats.
+# ═══════════════════════════════════════════════════════════════
+
+# Variables d'environnement (le modèle .env.example reste suivi)
+.env
+.env.local
+.env.*.local
+
+# Secrets (fichiers générés : whitelist uniquement .gitkeep)
+secrets/*
+!secrets/.gitkeep
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Reverse proxy NPM / certificats Let's Encrypt
+nginx_proxy/data/
+nginx_proxy/letsencrypt/
+
+# Données Docker / sauvegardes locales
+portainer_data/
+backups/
+
+# Logs
+logs/
+*.log
+
+# Python (django-integration, scripts)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Éditeurs & OS
+.idea/
+*.tmp
+*.bak
+*.sw?
+.DS_Store
+Thumbs.db

@@ -1,0 +1,55 @@
+# ═══════════════════════════════════════════════════════════════
+# Alertes Prometheus — Projets CodeLab (génériques)
+# S'applique à tous les projets Django
+# ═══════════════════════════════════════════════════════════════
+
+groups:
+
+  - name: codelab.django
+    rules:
+
+      - alert: AppDjangoIndisponible
+        expr: up{job=~"django_.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "🔴 App Django indisponible : {{ $labels.project }}"
+          description: "L'application {{ $labels.project }} sur {{ $labels.server }} ne répond plus."
+
+      - alert: ErreursDjango5xx
+        expr: |
+          rate(django_http_responses_total_by_status_view_method_total{
+            status=~"5.."
+          }[5m]) > 1
+        for: 3m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "⚠️ Erreurs 5xx — {{ $labels.project }} ({{ $value | printf \"%.2f\" }}/s)"
+
+  - name: codelab.ssl
+    rules:
+
+      - alert: CertificatSSLExpireBientôt
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+          category: ssl
+        annotations:
+          summary: "⚠️ Certificat SSL expire dans {{ $value | humanizeDuration }} — {{ $labels.instance }}"
+          description: "Renouveler le certificat Let's Encrypt pour {{ $labels.instance }}."
+
+      - alert: CertificatSSLExpireCritique
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+        for: 1h
+        labels:
+          severity: critical
+          category: ssl
+        annotations:
+          summary: "🔴 Certificat SSL expire dans {{ $value | humanizeDuration }} — {{ $labels.instance }}"

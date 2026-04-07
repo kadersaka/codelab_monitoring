@@ -1,0 +1,160 @@
+# ═══════════════════════════════════════════════════════════════
+# Promtail — Template pour serveurs distants (OCI, Hostinger, etc.)
+# À copier sur chaque serveur applicatif
+# Remplacer les variables entre < > avant déploiement :
+#   <TENANT_ID>    : identifiant du projet (ex: paygate, projetb)
+#   <SERVER_NAME>  : nom du serveur (ex: oci-main, hostinger-01)
+#   <LOKI_URL>     : URL de ton serveur Peramix
+#   <LOKI_USER>    : username basic auth Loki pour ce tenant
+#   <LOKI_PASS>    : mot de passe basic auth Loki pour ce tenant
+#   <APP_LOG_PATH> : chemin des logs Django (ex: /home/paygate/logs)
+#   <APP_NAME>     : nom de l'app (ex: paygate, projetb)
+# ═══════════════════════════════════════════════════════════════
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /tmp/promtail-positions-<TENANT_ID>.yaml
+  sync_period: 10s
+
+clients:
+  - url: https://<LOKI_URL>/loki/api/v1/push
+    tenant_id: <TENANT_ID>
+    basic_auth:
+      username: <LOKI_USER>
+      password: <LOKI_PASS>
+    tls_config:
+      insecure_skip_verify: false
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 30s
+    backoff_config:
+      min_period: 500ms
+      max_period: 10m
+      max_retries: 20
+
+scrape_configs:
+
+  # ── Logs Django / Application ──────────────────────────────────
+  - job_name: django
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: <APP_NAME>
+          server: <SERVER_NAME>
+          env: production
+          __path__: <APP_LOG_PATH>/*.log
+    pipeline_stages:
+      # Parser le format de log Django planifié
+      - regex:
+          expression: '^\[(?P<timestamp>[^\]]+)\]\s+\[(?P<level>[A-Z]+)\]\s+\[(?P<logger>[^\]]+)\](\s+\[\d+\])?\s+(?P<message>.*)$'
+      # Extraire le niveau comme label pour filtrer facilement
+      - labels:
+          level:
+          logger:
+      # Supprimer les DEBUG en production (économise de l'espace)
+      - match:
+          selector: '{level="DEBUG"}'
+          action: drop
+          drop_counter_reason: debug_dropped_production
+      # Défense en profondeur : masquer patterns sensibles résiduels
+      - replace:
+          expression: '(?i)(password|secret|token|api_key|authorization)(["\s:=]+)([^\s,\]"]{4,})'
+          replace: '${1}${2}***'
+      # Tronquer les messages trop longs
+      - limit:
+          rate: 1000
+          burst: 2000
+          drop: true
+
+  # ── Logs Celery ───────────────────────────────────────────────
+  - job_name: celery
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: celery
+          app: <APP_NAME>
+          server: <SERVER_NAME>
+          env: production
+          __path__: <APP_LOG_PATH>/celery*.log
+    pipeline_stages:
+      - regex:
+          expression: '^\[(?P<timestamp>[^\]]+)\]\s+\[(?P<level>[A-Z]+)\]\s+(?P<message>.*)$'
+      - labels:
+          level:
+
+  # ── Logs Nginx ───────────────────────────────────────────────
+  - job_name: nginx_access
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nginx_access
+          app: <APP_NAME>
+          server: <SERVER_NAME>
+          __path__: /var/log/nginx/access.log
+    pipeline_stages:
+      # Parser le format Combined de Nginx
+      - regex:
+          expression: '^(?P<ip>\S+)\s+-\s+-\s+\[(?P<timestamp>[^\]]+)\]\s+"(?P<method>\S+)\s+(?P<path>\S+)\s+\S+"\s+(?P<status>\d+)\s+(?P<bytes>\d+)'
+      - labels:
+          method:
+          status:
+      # Masquer les IPs pour privacy (garder seulement le /24)
+      - replace:
+          expression: '^(\d+\.\d+\.\d+)\.\d+'
+          replace: '${1}.***'
+      # Supprimer les health checks des logs access
+      - drop:
+          expression: '(GET /health|GET /metrics|HEAD /)'
+          drop_counter_reason: health_check_dropped
+
+  - job_name: nginx_error
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nginx_error
+          app: <APP_NAME>
+          server: <SERVER_NAME>
+          __path__: /var/log/nginx/error.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d+/\d+/\d+\s+\d+:\d+:\d+)\s+\[(?P<level>\w+)\]'
+      - labels:
+          level:
+
+  # ── Logs PostgreSQL ───────────────────────────────────────────
+  - job_name: postgresql
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: postgresql
+          app: <APP_NAME>
+          server: <SERVER_NAME>
+          __path__: /var/log/postgresql/postgresql-*.log
+    pipeline_stages:
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2}'
+          max_wait_time: 3s
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\w+)\s+\[(?P<pid>\d+)\]\s+(?P<level>\w+):\s+(?P<message>.*)$'
+      - labels:
+          level:
+      # Ne garder que les erreurs et warnings PostgreSQL
+      - match:
+          selector: '{level=~"LOG|DEBUG|STATEMENT"}'
+          action: drop
+          drop_counter_reason: pg_verbose_dropped
+
+  # ── Logs Supervisor (si utilisé pour Celery) ──────────────────
+  - job_name: supervisor
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: supervisor
+          app: <APP_NAME>
+          server: <SERVER_NAME>
+          __path__: /var/log/supervisor/*.log

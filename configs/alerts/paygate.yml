@@ -1,0 +1,203 @@
+# ═══════════════════════════════════════════════════════════════
+# Alertes Prometheus — PayGate Fintech
+# Couvre : transactions, wallets, agrégateurs, sécurité
+# Nécessite django-prometheus + métriques custom PayGate
+# ═══════════════════════════════════════════════════════════════
+
+groups:
+
+  - name: paygate.transactions
+    interval: 30s
+    rules:
+
+      - alert: TauxEchecTransactionElevé
+        expr: |
+          (
+            rate(paygate_transactions_total{status="FAILED", project="paygate"}[10m])
+            /
+            rate(paygate_transactions_total{project="paygate"}[10m])
+          ) > 0.15
+        for: 5m
+        labels:
+          severity: critical
+          category: transactions
+          project: paygate
+        annotations:
+          summary: "🔴 PayGate — Taux d'échec transactions > 15%"
+          description: |
+            Le taux d'échec des transactions est de {{ $value | humanizePercentage }} 
+            sur les 10 dernières minutes.
+            Vérifier les logs agrégateurs : logs{app="paygate", logger="paygate.aggregators"}
+
+      - alert: TransactionsProcessingBloquées
+        expr: |
+          paygate_processing_transactions > 20
+        for: 15m
+        labels:
+          severity: warning
+          category: transactions
+          project: paygate
+        annotations:
+          summary: "⚠️ PayGate — {{ $value }} transactions bloquées en PROCESSING"
+          description: |
+            {{ $value }} transactions sont en état PROCESSING depuis plus de 15 minutes.
+            Le worker Celery check_pending_transactions fonctionne-t-il ?
+
+      - alert: TransactionsProcessingCritique
+        expr: |
+          paygate_processing_transactions > 50
+        for: 10m
+        labels:
+          severity: critical
+          category: transactions
+          project: paygate
+        annotations:
+          summary: "🔴 PayGate — {{ $value }} transactions PROCESSING (critique)"
+          description: |
+            Situation critique : {{ $value }} transactions bloquées en PROCESSING.
+            Vérifier immédiatement les workers Celery et les agrégateurs partenaires.
+
+      - alert: AucuneTransactionDepuis2h
+        expr: |
+          rate(paygate_transactions_total{project="paygate"}[2h]) == 0
+        for: 5m
+        labels:
+          severity: warning
+          category: transactions
+          project: paygate
+        annotations:
+          summary: "⚠️ PayGate — Aucune transaction depuis 2 heures"
+          description: |
+            Aucune transaction créée depuis 2 heures.
+            Possible panne de l'API ou perte de clients.
+            Heure normale d'inactivité ? (nuit, week-end)
+
+      - alert: PayoutTimeoutAnormal
+        expr: |
+          increase(paygate_payout_timeout_total[10m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          category: transactions
+          project: paygate
+        annotations:
+          summary: "🔴 PayGate — {{ $value }} timeouts payout en 10 minutes"
+          description: |
+            Nombre anormal de timeouts sur les payouts.
+            Vérifier la connectivité vers les agrégateurs partenaires.
+            ATTENTION : Les fonds sont gelés pendant l'investigation.
+
+  - name: paygate.django
+    rules:
+
+      - alert: DjangoErreurs5xx
+        expr: |
+          rate(django_http_responses_total_by_status_view_method_total{
+            status=~"5..", 
+            job="django_paygate"
+          }[5m]) > 0.5
+        for: 3m
+        labels:
+          severity: critical
+          category: application
+          project: paygate
+        annotations:
+          summary: "🔴 PayGate — Erreurs 5xx ({{ $value | printf \"%.2f\" }}/s)"
+          description: |
+            Taux d'erreurs 5xx anormal sur l'API PayGate.
+            Vue concernée : {{ $labels.view }}
+
+      - alert: LatenceAPIElevée
+        expr: |
+          histogram_quantile(0.95, 
+            rate(django_http_request_duration_seconds_bucket{job="django_paygate"}[5m])
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          project: paygate
+        annotations:
+          summary: "⚠️ PayGate — Latence P95 élevée ({{ $value | printf \"%.2f\" }}s)"
+          description: |
+            95% des requêtes prennent plus de {{ $value | printf \"%.2f\" }}s.
+            Vérifier PostgreSQL, Redis et les appels API externes.
+
+      - alert: RequêtesBDLentes
+        expr: |
+          rate(django_db_execute_total{job="django_paygate"}[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          project: paygate
+        annotations:
+          summary: "⚠️ PayGate — Volume de requêtes SQL élevé ({{ $value | printf \"%.0f\" }}/s)"
+
+  - name: paygate.celery
+    rules:
+
+      - alert: CeleryWorkerIndisponible
+        expr: |
+          up{job="django_paygate"} == 1
+          and
+          celery_workers{job="django_paygate"} == 0
+        for: 3m
+        labels:
+          severity: critical
+          category: workers
+          project: paygate
+        annotations:
+          summary: "🔴 PayGate — Aucun worker Celery actif"
+          description: |
+            Aucun worker Celery n'est en cours d'exécution.
+            Les webhooks, vérifications de statut et callbacks ne sont pas traités.
+
+      - alert: FileCeleryEnRetard
+        expr: |
+          celery_queue_length{job="django_paygate", queue="default"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: workers
+          project: paygate
+        annotations:
+          summary: "⚠️ PayGate — File Celery en retard ({{ $value }} tâches)"
+          description: |
+            {{ $value }} tâches en attente dans la file Celery.
+            Les callbacks et vérifications de statut sont en retard.
+
+  - name: paygate.security
+    rules:
+
+      - alert: NombreElevéEchecs401
+        expr: |
+          rate(django_http_responses_total_by_status_view_method_total{
+            status="401",
+            job="django_paygate"
+          }[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          category: security
+          project: paygate
+        annotations:
+          summary: "⚠️ PayGate — Tentatives auth échouées élevées ({{ $value | printf \"%.1f\" }}/s)"
+          description: |
+            Taux anormal de réponses 401. Possible attaque par force brute.
+            Vérifier les logs sécurité : {logger="paygate.security"}
+
+      - alert: NombreElevéEchecs429
+        expr: |
+          rate(django_http_responses_total_by_status_view_method_total{
+            status="429",
+            job="django_paygate"
+          }[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+          project: paygate
+        annotations:
+          summary: "⚠️ PayGate — Rate limiting déclenché ({{ $value | printf \"%.1f\" }}/s)"
+          description: "Des clients se font bloquer par le rate limiter. Possible abus ou bug client."

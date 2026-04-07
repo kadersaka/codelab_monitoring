@@ -1,0 +1,55 @@
+# ═══════════════════════════════════════════════════════════════
+# Grafana — Datasource Loki
+# Provisionnée automatiquement au démarrage
+# ═══════════════════════════════════════════════════════════════
+
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki-main
+    isDefault: false
+    jsonData:
+      maxLines: 5000
+      timeout: 60
+      # Auth multi-tenant : Grafana envoie le tenant_id selon le datasource sélectionné
+      httpHeaderName1: 'X-Scope-OrgID'
+    secureJsonData:
+      httpHeaderValue1: 'paygate'   # Tenant par défaut — changeable par variable de dashboard
+    editable: false
+
+  # Datasource Loki séparé pour chaque projet (isolation des logs)
+  - name: Loki — PayGate
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki-paygate
+    jsonData:
+      maxLines: 10000
+      timeout: 60
+      httpHeaderName1: 'X-Scope-OrgID'
+    secureJsonData:
+      httpHeaderValue1: 'paygate'
+    editable: false
+
+  - name: Loki — Peramix
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki-peramix
+    jsonData:
+      maxLines: 5000
+      timeout: 60
+      httpHeaderName1: 'X-Scope-OrgID'
+    secureJsonData:
+      httpHeaderValue1: 'peramix'
+    editable: false
+
+  # Ajouter un bloc par nouveau projet :
+  # - name: Loki — ProjetB
+  #   uid: loki-projetb
+  #   secureJsonData:
+  #     httpHeaderValue1: 'projetb'

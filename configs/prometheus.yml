@@ -1,0 +1,146 @@
+# ═══════════════════════════════════════════════════════════════
+# Prometheus Configuration
+# Scrape toutes les métriques de tous les serveurs CodeLab
+# ═══════════════════════════════════════════════════════════════
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  scrape_timeout: 20s
+  external_labels:
+    monitor: 'codelab-monitoring'
+    environment: 'production'
+
+# ── Fichiers de règles d'alertes ────────────────────────────────
+rule_files:
+  - /etc/prometheus/alerts/infra.yml
+  - /etc/prometheus/alerts/paygate.yml
+  - /etc/prometheus/alerts/codelab.yml
+
+# ── Alertmanager ────────────────────────────────────────────────
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+      timeout: 10s
+
+# ══════════════════════════════════════════════════════════════
+# SCRAPE CONFIGS
+# ══════════════════════════════════════════════════════════════
+scrape_configs:
+
+  # ── Prometheus lui-même ────────────────────────────────────────
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+    relabel_configs:
+      - target_label: server
+        replacement: peramix
+
+  # ── Node Exporter — Peramix (serveur monitoring) ──────────────
+  - job_name: node_peramix
+    static_configs:
+      - targets: ['node_exporter:9100']
+        labels:
+          server: peramix
+          role: monitoring
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+).*'
+        replacement: 'peramix'
+
+  # ── cAdvisor — Containers Docker sur Peramix ──────────────────
+  - job_name: cadvisor_peramix
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          server: peramix
+
+  # ── MinIO ──────────────────────────────────────────────────────
+  - job_name: minio
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs:
+      - targets: ['minio:9000']
+        labels:
+          server: peramix
+
+  # ══════════════════════════════════════════════════════════════
+  # SERVEURS DISTANTS
+  # Ajouter chaque nouveau serveur ici
+  # Prérequis : Node Exporter installé sur le serveur distant
+  # ══════════════════════════════════════════════════════════════
+
+  # ── Node Exporter — Serveur OCI PayGate ───────────────────────
+  - job_name: node_oci_paygate
+    static_configs:
+      - targets: ['<IP_SERVEUR_OCI>:9100']
+        labels:
+          server: oci-paygate
+          project: paygate
+          role: application
+    # Basic auth si tu sécurises node_exporter avec un reverse proxy
+    # basic_auth:
+    #   username: prometheus
+    #   password: motdepasse
+
+  # ── Node Exporter — Serveur Hostinger Projet B ────────────────
+  - job_name: node_hostinger_projetb
+    static_configs:
+      - targets: ['<IP_SERVEUR_HOSTINGER_B>:9100']
+        labels:
+          server: hostinger-projetb
+          project: projetb
+          role: application
+
+  # ── Node Exporter — Serveur Hostinger Projet C ────────────────
+  # - job_name: node_hostinger_projetc
+  #   static_configs:
+  #     - targets: ['<IP_SERVEUR_HOSTINGER_C>:9100']
+  #       labels:
+  #         server: hostinger-projetc
+  #         project: projetc
+
+  # ══════════════════════════════════════════════════════════════
+  # MÉTRIQUES DJANGO (django-prometheus)
+  # Endpoint /metrics exposé par chaque app Django
+  # ══════════════════════════════════════════════════════════════
+
+  # ── Django PayGate ────────────────────────────────────────────
+  - job_name: django_paygate
+    static_configs:
+      - targets: ['<IP_SERVEUR_OCI>:8000']
+        labels:
+          server: oci-paygate
+          project: paygate
+          app: django
+    metrics_path: /metrics
+    # Si /metrics est protégé par Basic Auth
+    # basic_auth:
+    #   username: prometheus
+    #   password: motdepasse
+
+  # ── Django Projet B ───────────────────────────────────────────
+  # - job_name: django_projetb
+  #   static_configs:
+  #     - targets: ['<IP_SERVEUR_HOSTINGER_B>:8000']
+  #       labels:
+  #         project: projetb
+
+  # ── Redis Exporter — PayGate ──────────────────────────────────
+  # Installer redis_exporter sur le serveur OCI
+  # - job_name: redis_paygate
+  #   static_configs:
+  #     - targets: ['<IP_SERVEUR_OCI>:9121']
+  #       labels:
+  #         server: oci-paygate
+  #         project: paygate
+
+  # ── PostgreSQL Exporter — PayGate ────────────────────────────
+  # Installer postgres_exporter sur le serveur OCI
+  # - job_name: postgres_paygate
+  #   static_configs:
+  #     - targets: ['<IP_SERVEUR_OCI>:9187']
+  #       labels:
+  #         server: oci-paygate
+  #         project: paygate

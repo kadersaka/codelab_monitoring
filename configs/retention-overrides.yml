@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════════
+# Loki — Rétention par tenant (projet)
+# Chaque projet peut avoir une rétention différente
+# Le tenant_id correspond au X-Scope-OrgID envoyé par Promtail
+# ═══════════════════════════════════════════════════════════════
+
+overrides:
+  # PayGate — fintech, rétention longue pour compliance
+  paygate:
+    retention_period: 365d          # 1 an
+    ingestion_rate_mb: 10
+    ingestion_burst_size_mb: 20
+    max_streams_per_user: 5000
+
+  # Projet B
+  projetb:
+    retention_period: 90d           # 3 mois
+    ingestion_rate_mb: 5
+    ingestion_burst_size_mb: 10
+
+  # Projet C
+  projetc:
+    retention_period: 90d
+    ingestion_rate_mb: 5
+    ingestion_burst_size_mb: 10
+
+  # Peramix (le serveur de monitoring lui-même)
+  peramix:
+    retention_period: 30d           # 1 mois suffit pour l'infra
+    ingestion_rate_mb: 5
+    ingestion_burst_size_mb: 10
