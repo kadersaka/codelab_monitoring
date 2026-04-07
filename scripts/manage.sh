@@ -61,12 +61,12 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Envoie une alerte de test à Alertmanager (api v1). $1 = severity (warning|critical)
+# Envoie une alerte de test à Alertmanager (API v2 — v1 supprimée / 404 selon versions).
 post_test_alert_to_alertmanager() {
     local severity="$1"
     local tmp http_code
     tmp=$(mktemp)
-    if ! http_code=$(curl -sS -o "$tmp" -w "%{http_code}" -X POST http://127.0.0.1:9093/api/v1/alerts \
+    if ! http_code=$(curl -sS -o "$tmp" -w "%{http_code}" -X POST http://127.0.0.1:9093/api/v2/alerts \
         -H 'Content-Type: application/json' \
         -d "[{
             \"labels\": {
