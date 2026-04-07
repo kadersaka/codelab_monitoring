@@ -102,6 +102,7 @@ services:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
       - '--web.external-url=https://monitoring.codelab.bj/alertmanager'
+      - '--web.route-prefix=/'
     volumes:
       - ./configs/alertmanager.yml:/etc/alertmanager/config.yml:ro
       - ./secrets/alertmanager_smtp_password.txt:/etc/alertmanager/smtp_password:ro
