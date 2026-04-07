@@ -10,8 +10,8 @@ global:
   smtp_smarthost: 'smtp.gmail.com:587'
   smtp_from: 'codelabmonitoring@gmail.com'
   smtp_auth_username: 'codelabmonitoring@gmail.com'
-  # Mot de passe : .env → sync-secrets → secret Compose alertmanager_smtp_password
-  smtp_auth_password_file: '/run/secrets/alertmanager_smtp_password'
+  # Mot de passe : .env → scripts/sync-secrets-from-env.sh
+  smtp_auth_password_file: '/etc/alertmanager/smtp_password'
   smtp_require_tls: true
 
 # ── Templates ───────────────────────────────────────────────────

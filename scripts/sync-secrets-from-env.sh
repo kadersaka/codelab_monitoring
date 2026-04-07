@@ -16,7 +16,8 @@ source .env
 set +a
 
 mkdir -p secrets
+chmod 700 secrets 2>/dev/null || true
 umask 077
 printf '%s' "${SMTP_PASSWORD:-}" > secrets/alertmanager_smtp_password.txt
-chmod 600 secrets/alertmanager_smtp_password.txt
+chmod 644 secrets/alertmanager_smtp_password.txt
 echo "[sync-secrets] secrets/alertmanager_smtp_password.txt mis à jour depuis .env"
