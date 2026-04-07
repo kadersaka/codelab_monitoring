@@ -52,7 +52,8 @@ storage_config:
     cache_ttl: 24h
     shared_store: s3
   aws:
-    s3: http://minio:9000
+    endpoint: http://minio:9000
+    region: us-east-1
     bucketnames: loki
     access_key_id: ${MINIO_ROOT_USER}
     secret_access_key: ${MINIO_ROOT_PASSWORD}

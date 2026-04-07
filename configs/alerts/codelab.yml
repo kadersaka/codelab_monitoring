@@ -28,7 +28,7 @@ groups:
           severity: warning
           category: application
         annotations:
-          summary: "⚠️ Erreurs 5xx — {{ $labels.project }} ({{ printf \"%.2f\" $value }}/s)"
+          summary: '⚠️ Erreurs 5xx — {{ $labels.project }} ({{ printf "%.2f" $value }}/s)'
 
   - name: codelab.ssl
     rules:

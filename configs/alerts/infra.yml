@@ -43,7 +43,7 @@ groups:
           severity: warning
           category: performance
         annotations:
-          summary: "⚠️ CPU élevé sur {{ $labels.server }} ({{ printf \"%.1f\" $value }}%)"
+          summary: '⚠️ CPU élevé sur {{ $labels.server }} ({{ printf "%.1f" $value }}%)'
           description: "Le CPU de {{ $labels.server }} dépasse 85% depuis 5 minutes."
 
       - alert: CPUCritique
@@ -54,8 +54,8 @@ groups:
           severity: critical
           category: performance
         annotations:
-          summary: "🔴 CPU critique sur {{ $labels.server }} ({{ printf \"%.1f\" $value }}%)"
-          description: "CPU à {{ printf \"%.1f\" $value }}% sur {{ $labels.server }} depuis 2 minutes."
+          summary: '🔴 CPU critique sur {{ $labels.server }} ({{ printf "%.1f" $value }}%)'
+          description: 'CPU à {{ printf "%.1f" $value }}% sur {{ $labels.server }} depuis 2 minutes.'
 
   - name: infra.memory
     rules:
@@ -68,8 +68,8 @@ groups:
           severity: warning
           category: performance
         annotations:
-          summary: "⚠️ Mémoire élevée sur {{ $labels.server }} ({{ printf \"%.1f\" $value }}%)"
-          description: "Utilisation RAM : {{ printf \"%.1f\" $value }}% sur {{ $labels.server }}."
+          summary: '⚠️ Mémoire élevée sur {{ $labels.server }} ({{ printf "%.1f" $value }}%)'
+          description: 'Utilisation RAM : {{ printf "%.1f" $value }}% sur {{ $labels.server }}.'
 
       - alert: MémoireCritique
         expr: |
@@ -79,7 +79,7 @@ groups:
           severity: critical
           category: performance
         annotations:
-          summary: "🔴 Mémoire critique sur {{ $labels.server }} ({{ printf \"%.1f\" $value }}%)"
+          summary: '🔴 Mémoire critique sur {{ $labels.server }} ({{ printf "%.1f" $value }}%)'
           description: "RAM presque épuisée sur {{ $labels.server }}. Risque d'OOM Kill imminent."
 
   - name: infra.disk
@@ -94,8 +94,8 @@ groups:
           severity: warning
           category: disk
         annotations:
-          summary: "⚠️ Disque à {{ printf \"%.1f\" $value }}% sur {{ $labels.server }}"
-          description: "Partition {{ $labels.mountpoint }} à {{ printf \"%.1f\" $value }}% sur {{ $labels.server }}."
+          summary: '⚠️ Disque à {{ printf "%.1f" $value }}% sur {{ $labels.server }}'
+          description: 'Partition {{ $labels.mountpoint }} à {{ printf "%.1f" $value }}% sur {{ $labels.server }}.'
 
       - alert: DisqueCritique
         expr: |
@@ -106,8 +106,8 @@ groups:
           severity: critical
           category: disk
         annotations:
-          summary: "🔴 Disque critique {{ printf \"%.1f\" $value }}% sur {{ $labels.server }}"
-          description: "Partition {{ $labels.mountpoint }} à {{ printf \"%.1f\" $value }}% sur {{ $labels.server }}. Action immédiate requise pour éviter une coupure de service."
+          summary: '🔴 Disque critique {{ printf "%.1f" $value }}% sur {{ $labels.server }}'
+          description: 'Partition {{ $labels.mountpoint }} à {{ printf "%.1f" $value }}% sur {{ $labels.server }}. Action immédiate requise pour éviter une coupure de service.'
 
       - alert: DisquePleinDansXHeures
         expr: |
