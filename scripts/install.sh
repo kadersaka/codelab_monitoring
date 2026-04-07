@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+SCRIPT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$SCRIPT_ROOT" || exit 1
+dc() { docker compose -f "${SCRIPT_ROOT}/docker-compose.yml" --project-directory "${SCRIPT_ROOT}" "$@"; }
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -129,8 +133,8 @@ bash scripts/sync-secrets-from-env.sh
 
 # ── Démarrage des services ───────────────────────────────────────
 log_info "Démarrage de la stack monitoring..."
-docker compose pull
-docker compose up -d
+dc pull
+dc up -d
 
 # ── Vérification santé ───────────────────────────────────────────
 log_info "Attente du démarrage des services (60 secondes)..."
@@ -141,7 +145,7 @@ SERVICES=("loki" "prometheus" "grafana" "minio" "alertmanager")
 ALL_OK=true
 
 for service in "${SERVICES[@]}"; do
-    STATUS=$(docker compose ps --format "{{.Status}}" "$service" 2>/dev/null || echo "absent")
+    STATUS=$(dc ps --format "{{.Status}}" "$service" 2>/dev/null || echo "absent")
     if [[ "$STATUS" == *"healthy"* ]] || [[ "$STATUS" == *"Up"* ]]; then
         log_success "$service : $STATUS"
     else
@@ -177,5 +181,5 @@ echo ""
 if $ALL_OK; then
     log_success "Tous les services sont opérationnels."
 else
-    log_warning "Certains services ne sont pas encore prêts. Lance : docker compose ps"
+    log_warning "Certains services ne sont pas encore prêts. Lance : cd ${SCRIPT_ROOT} && dc ps"
 fi

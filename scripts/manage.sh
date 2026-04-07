@@ -5,19 +5,48 @@
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
-cd "$(dirname "$0")/.."
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT_DIR"
 
-# Préfixe des volumes Docker (= nom du projet Compose) : COMPOSE_PROJECT_NAME dans .env, sinon nom du dossier
+# Docker via Snap : le répertoire courant est « vide » → compose.yml introuvable ; chemins absolus
+dc() {
+    docker compose -f "${ROOT_DIR}/docker-compose.yml" --project-directory "${ROOT_DIR}" "$@"
+}
+
+# Préfixe des volumes = nom du projet Compose (ex. volume "foo_grafana_data" → foo)
 compose_volume_prefix() {
-    local from_env=""
+    local cid proj from_env vol_hint
+
+    # 1) Conteneur Grafana ou Prometheus de CE compose → label officiel
+    for svc in grafana prometheus; do
+        cid="$(dc ps -q "$svc" 2>/dev/null | head -n1 || true)"
+        if [[ -n "$cid" ]]; then
+            proj="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$cid" 2>/dev/null || true)"
+            if [[ -n "$proj" ]]; then
+                echo "$proj"
+                return
+            fi
+        fi
+    done
+
+    # 2) Un seul volume *grafana_data sur l’hôte → déduire le préfixe (install singleton)
+    mapfile -t vol_hint < <(docker volume ls -q 2>/dev/null | grep '_grafana_data$' || true)
+    if [[ ${#vol_hint[@]} -eq 1 ]]; then
+        echo "${vol_hint[0]%_grafana_data}"
+        return
+    fi
+
+    # 3) COMPOSE_PROJECT_NAME dans .env
     if [[ -f .env ]]; then
         from_env="$(grep -E '^[[:space:]]*COMPOSE_PROJECT_NAME=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[\"'\'']//;s/[\"'\'']$//')"
     fi
     if [[ -n "${from_env}" ]]; then
         echo "${from_env}"
-    else
-        basename "$(pwd)"
+        return
     fi
+
+    # 4) Nom du dossier
+    basename "$(pwd)"
 }
 
 GREEN='\033[0;32m'
@@ -46,7 +75,7 @@ post_test_alert_to_alertmanager() {
         }]"); then
         rm -f "$tmp"
         echo -e "${RED}Échec : impossible de joindre Alertmanager sur http://127.0.0.1:9093${NC}" >&2
-        echo "  → Lance la stack sur cette machine : docker compose up -d alertmanager" >&2
+        echo "  → Lance la stack sur ce serveur : bash scripts/manage.sh update" >&2
         echo "  → Ou exécute ce script sur le VPS où tourne le monitoring." >&2
         return 1
     fi
@@ -81,7 +110,7 @@ case "${1:-help}" in
 
     status)
         echo -e "${BLUE}Statut des services :${NC}"
-        docker compose ps
+        dc ps
         echo ""
         echo -e "${BLUE}Utilisation des ressources :${NC}"
         docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}"
@@ -90,7 +119,7 @@ case "${1:-help}" in
     logs)
         SERVICE="${2:-grafana}"
         echo -e "${BLUE}Logs de $SERVICE (Ctrl+C pour quitter) :${NC}"
-        docker compose logs -f --tail=100 "$SERVICE"
+        dc logs -f --tail=100 "$SERVICE"
         ;;
 
     restart)
@@ -100,20 +129,20 @@ case "${1:-help}" in
             exit 1
         fi
         echo -e "${BLUE}Redémarrage de $SERVICE...${NC}"
-        docker compose restart "$SERVICE"
+        dc restart "$SERVICE"
         echo -e "${GREEN}$SERVICE redémarré.${NC}"
         ;;
 
     sync-secrets)
         bash scripts/sync-secrets-from-env.sh
-        echo -e "${GREEN}Secrets synchronisés. Redémarre alertmanager si tu as changé SMTP_PASSWORD : docker compose restart alertmanager${NC}"
+        echo -e "${GREEN}Secrets synchronisés. Redémarre alertmanager si besoin : bash scripts/manage.sh restart alertmanager${NC}"
         ;;
 
     update)
         echo -e "${BLUE}Mise à jour des images Docker...${NC}"
         bash scripts/sync-secrets-from-env.sh
-        docker compose pull
-        docker compose up -d
+        dc pull
+        dc up -d
         docker image prune -f
         echo -e "${GREEN}Mise à jour terminée.${NC}"
         ;;
@@ -125,8 +154,11 @@ case "${1:-help}" in
         for v in "$GVOL" "$PVOL"; do
             if ! docker volume inspect "$v" &>/dev/null; then
                 echo -e "${RED}Volume introuvable : $v${NC}" >&2
-                echo "  Préfixe détecté : ${VOL_PFX} (dossier ou COMPOSE_PROJECT_NAME dans .env)" >&2
-                echo "  Volumes présents : docker volume ls | grep grafana\\|prometheus" >&2
+                echo "  Préfixe utilisé : ${VOL_PFX}" >&2
+                echo "  → Lance la stack : bash scripts/manage.sh update" >&2
+                echo "  → Ou fixe le préfixe : ajoute COMPOSE_PROJECT_NAME=... dans .env (sans _grafana_data)" >&2
+                echo "  Volumes existants (repère *_grafana_data / *_prometheus_data) :" >&2
+                docker volume ls 2>/dev/null | grep -E 'grafana|prometheus' >&2 || docker volume ls >&2
                 exit 1
             fi
         done
@@ -177,7 +209,7 @@ case "${1:-help}" in
             exit 1
         fi
         echo -e "${GREEN}Requête acceptée par Alertmanager.${NC}"
-        echo -e "${YELLOW}Pas d'email ? Vérifie SMTP : docker compose logs --tail=80 alertmanager${NC}"
+        echo -e "${YELLOW}Pas d'email ? Vérifie SMTP : bash scripts/manage.sh logs alertmanager${NC}"
         ;;
 
     test-alert-critical)
@@ -186,7 +218,7 @@ case "${1:-help}" in
             exit 1
         fi
         echo -e "${GREEN}Requête acceptée par Alertmanager.${NC}"
-        echo -e "${YELLOW}Pas de notification ? docker compose logs --tail=80 alertmanager alertmanager_telegram${NC}"
+        echo -e "${YELLOW}Pas de notification ? bash scripts/manage.sh logs alertmanager / logs alertmanager_telegram${NC}"
         ;;
 
     *)
