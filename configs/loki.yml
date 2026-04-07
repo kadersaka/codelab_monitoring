@@ -84,11 +84,8 @@ limits_config:
   # Rejeter les logs trop anciens (anti-erreurs Promtail)
   reject_old_samples: true
   reject_old_samples_max_age: 168h  # 7 jours
-
-# ── Rétention par tenant ─────────────────────────────────────────
-# Override par tenant dans la requête header X-Scope-OrgID
-# Configuré ici pour chaque projet
-per_tenant_override_config: /etc/loki/retention-overrides.yml
+  # Rétention / quotas par tenant (X-Scope-OrgID) — doit être sous limits_config en Loki 2.9+
+  per_tenant_override_config: /etc/loki/retention-overrides.yml
 
 # ── Ruler (alertes Loki) ────────────────────────────────────────
 ruler:

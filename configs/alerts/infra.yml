@@ -107,9 +107,7 @@ groups:
           category: disk
         annotations:
           summary: "🔴 Disque critique {{ $value | printf \"%.1f\" }}% sur {{ $labels.server }}"
-          description: |
-            Partition {{ $labels.mountpoint }} à {{ $value | printf \"%.1f\" }}% sur {{ $labels.server }}.
-            Action immédiate requise pour éviter une coupure de service.
+          description: "Partition {{ $labels.mountpoint }} à {{ $value | printf \"%.1f\" }}% sur {{ $labels.server }}. Action immédiate requise pour éviter une coupure de service."
 
       - alert: DisquePleinDansXHeures
         expr: |
