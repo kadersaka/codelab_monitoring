@@ -98,6 +98,8 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.26.0
     container_name: alertmanager
+    # L’image utilise USER nobody mais le volume nommé est root:root → écriture silences/état impossible → crash.
+    user: "0:0"
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'

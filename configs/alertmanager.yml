@@ -14,10 +14,6 @@ global:
   smtp_auth_password_file: '/etc/alertmanager/smtp_password'
   smtp_require_tls: true
 
-# ── Templates ───────────────────────────────────────────────────
-templates:
-  - '/etc/alertmanager/templates/*.tmpl'
-
 # ── Routing ────────────────────────────────────────────────────
 route:
   group_by: ['alertname', 'project', 'server']
