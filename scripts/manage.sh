@@ -8,8 +8,6 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-# Docker via Snap : le répertoire courant est « vide » → compose.yml introuvable ; chemins absolus
-# Si Snap bloque l’accès à /opt, l’erreur « no such file » persiste : installer Docker Engine (get.docker.com) ou retirer le snap.
 dc() {
     local compose_file="${ROOT_DIR}/docker-compose.yml"
     if [[ ! -f "$compose_file" ]]; then
@@ -19,11 +17,12 @@ dc() {
     docker compose -f "$compose_file" --project-directory "${ROOT_DIR}" "$@"
 }
 
-# Préfixe des volumes = nom du projet Compose (ex. volume "foo_grafana_data" → foo)
+# Préfixe des volumes = nom du projet Compose
 compose_volume_prefix() {
-    local cid proj from_env vol_hint
+    local cid proj from_env
+    local -a vol_hint
 
-    # 1) Conteneur Grafana ou Prometheus de CE compose → label officiel
+    # 1) Label officiel depuis le conteneur
     for svc in grafana prometheus; do
         cid="$(dc ps -q "$svc" 2>/dev/null | head -n1 || true)"
         if [[ -n "$cid" ]]; then
@@ -35,16 +34,17 @@ compose_volume_prefix() {
         fi
     done
 
-    # 2) Un seul volume *grafana_data sur l’hôte → déduire le préfixe (install singleton)
-    mapfile -t vol_hint < <(docker volume ls -q 2>/dev/null | grep '_grafana_data$' || true)
+    # 2) Déduire depuis le volume grafana_data
+    mapfile -t vol_hint < <(docker volume ls -q 2>/dev/null | grep '_grafana_data' || true)
     if [[ ${#vol_hint[@]} -eq 1 ]]; then
         echo "${vol_hint[0]%_grafana_data}"
         return
     fi
 
     # 3) COMPOSE_PROJECT_NAME dans .env
+    from_env=""
     if [[ -f .env ]]; then
-        from_env="$(grep -E '^[[:space:]]*COMPOSE_PROJECT_NAME=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[\"'\'']//;s/[\"'\'']$//')"
+        from_env="$(grep -E '^[[:space:]]*COMPOSE_PROJECT_NAME=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[\"'\'']//;s/[\"'\'']$//' || true)"
     fi
     if [[ -n "${from_env}" ]]; then
         echo "${from_env}"
@@ -61,10 +61,8 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# API sous /alertmanager (dérivé de --web.external-url=…/alertmanager dans docker-compose).
 ALERTMANAGER_API_V2="${ALERTMANAGER_API_V2:-http://127.0.0.1:9093/alertmanager/api/v2/alerts}"
 
-# Envoie une alerte de test à Alertmanager (API v2).
 post_test_alert_to_alertmanager() {
     local severity="$1"
     local tmp http_code
@@ -84,8 +82,6 @@ post_test_alert_to_alertmanager() {
         }]"); then
         rm -f "$tmp"
         echo -e "${RED}Échec : impossible de joindre Alertmanager (${ALERTMANAGER_API_V2})${NC}" >&2
-        echo "  → Lance la stack sur ce serveur : bash scripts/manage.sh update" >&2
-        echo "  → Ou exécute ce script sur le VPS où tourne le monitoring." >&2
         return 1
     fi
     if [[ "$http_code" != 200 ]] && [[ "$http_code" != 202 ]]; then
@@ -101,18 +97,17 @@ post_test_alert_to_alertmanager() {
 show_help() {
     echo ""
     echo "CodeLab Monitoring — Commandes disponibles :"
-    echo "  (docker compose : bash scripts/dc ...  ex. bash scripts/dc ps)"
     echo ""
-    echo "  bash scripts/manage.sh status        Statut de tous les services"
-    echo "  bash scripts/manage.sh logs [svc]    Logs d'un service (ex: loki, grafana)"
-    echo "  bash scripts/manage.sh restart [svc] Redémarrer un service"
-    echo "  bash scripts/manage.sh update        Mettre à jour les images Docker"
-    echo "  bash scripts/manage.sh backup        Sauvegarder les volumes"
-    echo "  bash scripts/manage.sh reload-prom   Recharger la config Prometheus sans redémarrage"
-    echo "  bash scripts/manage.sh disk          Utilisation disque des volumes"
-    echo "  bash scripts/manage.sh test-alert          Alerte test severity=warning (email seulement)"
-    echo "  bash scripts/manage.sh test-alert-critical Alerte test severity=critical (email + Telegram)"
-    echo "  bash scripts/manage.sh sync-secrets        Régénérer le secret SMTP Alertmanager depuis .env"
+    echo "  bash scripts/manage.sh status              Statut de tous les services"
+    echo "  bash scripts/manage.sh logs [svc]          Logs d'un service (ex: loki, grafana)"
+    echo "  bash scripts/manage.sh restart [svc]       Redémarrer un service"
+    echo "  bash scripts/manage.sh update              Mettre à jour les images Docker"
+    echo "  bash scripts/manage.sh backup              Sauvegarder les volumes"
+    echo "  bash scripts/manage.sh reload-prom         Recharger la config Prometheus"
+    echo "  bash scripts/manage.sh disk                Utilisation disque des volumes"
+    echo "  bash scripts/manage.sh test-alert          Alerte test warning (email)"
+    echo "  bash scripts/manage.sh test-alert-critical Alerte test critical (email + Telegram)"
+    echo "  bash scripts/manage.sh sync-secrets        Régénérer le secret SMTP depuis .env"
     echo ""
 }
 
@@ -145,7 +140,7 @@ case "${1:-help}" in
 
     sync-secrets)
         bash scripts/sync-secrets-from-env.sh
-        echo -e "${GREEN}Secrets synchronisés. Redémarre alertmanager si besoin : bash scripts/manage.sh restart alertmanager${NC}"
+        echo -e "${GREEN}Secrets synchronisés.${NC}"
         ;;
 
     update)
@@ -164,10 +159,6 @@ case "${1:-help}" in
         for v in "$GVOL" "$PVOL"; do
             if ! docker volume inspect "$v" &>/dev/null; then
                 echo -e "${RED}Volume introuvable : $v${NC}" >&2
-                echo "  Préfixe utilisé : ${VOL_PFX}" >&2
-                echo "  → Lance la stack : bash scripts/manage.sh update" >&2
-                echo "  → Ou fixe le préfixe : ajoute COMPOSE_PROJECT_NAME=... dans .env (sans _grafana_data)" >&2
-                echo "  Volumes existants (repère *_grafana_data / *_prometheus_data) :" >&2
                 docker volume ls 2>/dev/null | grep -E 'grafana|prometheus' >&2 || docker volume ls >&2
                 exit 1
             fi
@@ -175,26 +166,22 @@ case "${1:-help}" in
 
         BACKUP_DIR="./backups/$(date +%Y%m%d_%H%M%S)"
         mkdir -p "$BACKUP_DIR"
-        echo -e "${BLUE}Sauvegarde dans $BACKUP_DIR (volumes ${GVOL}, ${PVOL})...${NC}"
+        echo -e "${BLUE}Sauvegarde dans $BACKUP_DIR...${NC}"
 
-        # Grafana (dashboards, users, etc.)
         docker run --rm \
             -v "${GVOL}:/data" \
             -v "$(pwd)/$BACKUP_DIR":/backup \
             alpine tar czf /backup/grafana.tar.gz -C /data .
         echo -e "${GREEN}Grafana sauvegardé.${NC}"
 
-        # Prometheus (métriques)
         docker run --rm \
             -v "${PVOL}:/data" \
             -v "$(pwd)/$BACKUP_DIR":/backup \
             alpine tar czf /backup/prometheus.tar.gz -C /data .
         echo -e "${GREEN}Prometheus sauvegardé.${NC}"
 
-        # Configs
         tar czf "$BACKUP_DIR/configs.tar.gz" configs/
         echo -e "${GREEN}Configs sauvegardées.${NC}"
-
         echo -e "${GREEN}Sauvegarde complète dans : $BACKUP_DIR${NC}"
         ls -lh "$BACKUP_DIR"
         ;;
@@ -202,7 +189,7 @@ case "${1:-help}" in
     reload-prom)
         echo -e "${BLUE}Rechargement de la configuration Prometheus...${NC}"
         curl -s -X POST http://localhost:9090/-/reload
-        echo -e "${GREEN}Prometheus rechargé (vérifier : http://localhost:9090/config)${NC}"
+        echo -e "${GREEN}Prometheus rechargé.${NC}"
         ;;
 
     disk)
@@ -214,21 +201,15 @@ case "${1:-help}" in
         ;;
 
     test-alert)
-        echo -e "${BLUE}Envoi d'une alerte de test (warning → email seulement, délai ~30s group_wait)...${NC}"
-        if ! post_test_alert_to_alertmanager warning; then
-            exit 1
-        fi
+        echo -e "${BLUE}Envoi d'une alerte de test (warning)...${NC}"
+        if ! post_test_alert_to_alertmanager warning; then exit 1; fi
         echo -e "${GREEN}Requête acceptée par Alertmanager.${NC}"
-        echo -e "${YELLOW}Pas d'email ? Vérifie SMTP : bash scripts/manage.sh logs alertmanager${NC}"
         ;;
 
     test-alert-critical)
-        echo -e "${BLUE}Envoi d'une alerte de test (critical → email + Telegram, délai ~15s group_wait)...${NC}"
-        if ! post_test_alert_to_alertmanager critical; then
-            exit 1
-        fi
+        echo -e "${BLUE}Envoi d'une alerte de test (critical)...${NC}"
+        if ! post_test_alert_to_alertmanager critical; then exit 1; fi
         echo -e "${GREEN}Requête acceptée par Alertmanager.${NC}"
-        echo -e "${YELLOW}Pas de notification ? bash scripts/manage.sh logs alertmanager / logs alertmanager_telegram${NC}"
         ;;
 
     *)

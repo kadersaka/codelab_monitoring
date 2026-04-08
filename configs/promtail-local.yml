@@ -16,9 +16,8 @@ positions:
 clients:
   - url: http://loki:3100/loki/api/v1/push
     tenant_id: peramix
-    # Pas de basic auth car connexion réseau Docker interne
     batchwait: 1s
-    batchsize: 1048576   # 1 MB
+    batchsize: 1048576
     timeout: 10s
     backoff_config:
       min_period: 500ms
@@ -38,7 +37,7 @@ scrape_configs:
           __path__: /var/log/syslog
     pipeline_stages:
       - regex:
-          expression: '^(?P<timestamp>\w+\s+\d+\s+[\d:]+)\s+(?P<hostname>\S+)\s+(?P<process>\S+):\s+(?P<message>.*)$'
+          expression: '^(?P<timestamp>\w+\s+\d+\s+[\d:]+)\s+(?P<hostname>\S+)\s+(?P<process>\S+):\s+(?P<message>.*)'
       - labels:
           process:
 
@@ -79,7 +78,6 @@ scrape_configs:
       - labels:
           level:
           logger:
-      # Supprimer les logs de santé (trop verbeux)
       - drop:
           expression: '.*health.*'
           drop_counter_reason: health_check
