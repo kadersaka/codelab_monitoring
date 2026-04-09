@@ -74,6 +74,15 @@ scrape_configs:
   #         project: paygate
   #         role: application
 
+  # -- Node Exporter - Cenof
+  - job_name: node_cenof
+    static_configs:
+      - targets: ['77.37.87.37:9100']
+        labels:
+          server: cenof-server
+          project: cenof
+          role: application
+
   # ── Node Exporter — Serveur Hostinger Projet B ────────────────
   # - job_name: node_hostinger_projetb
   #   static_configs:
