@@ -1,0 +1,192 @@
+{
+  "title": "Cenof — Vue Générale",
+  "uid": "cenof-overview",
+  "tags": ["cenof", "codelab"],
+  "timezone": "Africa/Porto-Novo",
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "Disponibilité",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "up{server=\"cenof-server\", job=~\"node_.*\"}",
+        "legendFormat": "cenof-server",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto" }
+    },
+
+    {
+      "id": 2,
+      "title": "CPU Usage (%)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "100 - (avg by (server) (irate(node_cpu_seconds_total{mode=\"idle\", server=\"cenof-server\"}[5m])) * 100)",
+        "legendFormat": "CPU",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 70 }, { "color": "red", "value": 90 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area" }
+    },
+
+    {
+      "id": 3,
+      "title": "RAM Usage (%)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "(1 - (node_memory_MemAvailable_bytes{server=\"cenof-server\"} / node_memory_MemTotal_bytes{server=\"cenof-server\"})) * 100",
+        "legendFormat": "RAM",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 75 }, { "color": "red", "value": 90 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area" }
+    },
+
+    {
+      "id": 4,
+      "title": "Disque Usage (%)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "(1 - (node_filesystem_avail_bytes{server=\"cenof-server\", mountpoint=\"/\", fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{server=\"cenof-server\", mountpoint=\"/\", fstype!~\"tmpfs|overlay\"})) * 100",
+        "legendFormat": "Disque",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 75 }, { "color": "red", "value": 90 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area" }
+    },
+
+    {
+      "id": 5,
+      "title": "Requêtes Django (total/s)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "rate(django_http_requests_before_middlewares_total{server=\"cenof-server\"}[5m])",
+        "legendFormat": "req/s",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area" }
+    },
+
+    {
+      "id": 6,
+      "title": "Erreurs 5xx Django",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "rate(django_http_responses_total_by_status_view_method_total{server=\"cenof-server\", status=~\"5..\"}[5m])",
+        "legendFormat": "5xx/s",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "colorMode": "background", "graphMode": "area" }
+    },
+
+    {
+      "id": 7,
+      "title": "CPU — Historique",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "100 - (avg by (server) (irate(node_cpu_seconds_total{mode=\"idle\", server=\"cenof-server\"}[5m])) * 100)",
+        "legendFormat": "CPU %",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+
+    {
+      "id": 8,
+      "title": "RAM — Historique",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
+      "targets": [{
+        "expr": "(1 - (node_memory_MemAvailable_bytes{server=\"cenof-server\"} / node_memory_MemTotal_bytes{server=\"cenof-server\"})) * 100",
+        "legendFormat": "RAM %",
+        "refId": "A"
+      }],
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "palette-classic" } } },
+      "options": { "tooltip": { "mode": "multi" } }
+    },
+
+    {
+      "id": 9,
+      "title": "Logs Django — Cenof",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
+      "datasource": { "type": "loki", "uid": "b13179c3-908c-4f15-b2bf-e0b0eff176b9" },
+      "targets": [{
+        "expr": "{job=\"django\", app=\"cenof\"}",
+        "refId": "A"
+      }],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    }
+
+  ],
+  "templating": { "list": [] },
+  "timepicker": {},
+  "version": 1
+}
