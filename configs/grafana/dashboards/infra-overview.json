@@ -27,7 +27,7 @@
     },
 
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -58,7 +58,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "up{job=~\"node_.*\", server=\"$server\"}",
           "legendFormat": "{{ server }}",
           "refId": "A"
@@ -75,7 +75,7 @@
     },
 
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -99,7 +99,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "100 - (avg by (server) (irate(node_cpu_seconds_total{mode=\"idle\", job=~\"node_.*\"}[5m])) * 100)",
           "legendFormat": "{{ server }}",
           "refId": "A"
@@ -116,7 +116,7 @@
     },
 
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -140,7 +140,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "(1 - (node_memory_MemAvailable_bytes{job=~\"node_.*\"} / node_memory_MemTotal_bytes{job=~\"node_.*\"})) * 100",
           "legendFormat": "{{ server }}",
           "refId": "A"
@@ -149,7 +149,7 @@
     },
 
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -167,7 +167,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "node_memory_MemAvailable_bytes{job=~\"node_.*\"}",
           "legendFormat": "{{ server }}",
           "refId": "A"
@@ -184,7 +184,7 @@
     },
 
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -215,7 +215,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\", fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{mountpoint=\"/\", fstype!~\"tmpfs|overlay\"})) * 100",
           "legendFormat": "{{ server }}",
           "refId": "A"
@@ -224,7 +224,7 @@
     },
 
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -241,7 +241,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "irate(node_disk_read_bytes_total{job=~\"node_.*\", device!~\"sr.*\"}[5m])",
           "legendFormat": "{{ server }} — {{ device }} read",
           "refId": "A"
@@ -250,7 +250,7 @@
     },
 
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus-main" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -267,13 +267,13 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "irate(node_network_receive_bytes_total{job=~\"node_.*\", device!~\"lo|docker.*|veth.*\"}[5m])",
           "legendFormat": "{{ server }} IN",
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus-main" },
           "expr": "irate(node_network_transmit_bytes_total{job=~\"node_.*\", device!~\"lo|docker.*|veth.*\"}[5m])",
           "legendFormat": "{{ server }} OUT",
           "refId": "B"
@@ -289,7 +289,7 @@
     "list": [
       {
         "current": { "selected": true, "text": "All", "value": "$__all" },
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "datasource": { "type": "prometheus", "uid": "prometheus-main" },
         "definition": "label_values(node_uname_info, server)",
         "hide": 0,
         "includeAll": true,
