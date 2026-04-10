@@ -117,12 +117,13 @@ scrape_configs:
   # ── Django Cenof ──────────────────────────────────────────────
   - job_name: django_cenof
     static_configs:
-      - targets: ['77.37.87.37:8000']
+      - targets: ['api.cenof.finance']
         labels:
           server: cenof-server
           project: cenof
           app: django
     metrics_path: /metrics
+    scheme: https
   #   metrics_path: /metrics
 
   # ── Django Projet B ───────────────────────────────────────────
