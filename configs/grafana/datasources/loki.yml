@@ -61,8 +61,3 @@ datasources:
       httpHeaderValue1: 'cenof'
     editable: false
 
-  # Ajouter un bloc par nouveau projet :
-  # - name: Loki — ProjetB
-  #   uid: loki-projetb
-  #   secureJsonData:
-  #     httpHeaderValue1: 'projetb'
