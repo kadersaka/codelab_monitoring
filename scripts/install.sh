@@ -1,19 +1,14 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-# Script d'installation — Serveur Peramix (Ubuntu 22.04)
-# À lancer en tant que root ou avec sudo
-# Usage : bash install.sh
+# CodeLab Monitoring Stack — Script d'installation
+# Compatible : Ubuntu 22.04 / Oracle Cloud (OCI)
+# Usage : sudo bash scripts/install.sh
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_ROOT" || exit 1
-dc() {
-    local cf="${SCRIPT_ROOT}/docker-compose.yml"
-    [[ -f "$cf" ]] || log_error "Fichier introuvable : $cf"
-    docker compose -f "$cf" --project-directory "${SCRIPT_ROOT}" "$@"
-}
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -26,66 +21,91 @@ log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
+dc() {
+    docker compose -f "${SCRIPT_ROOT}/docker-compose.yml" --project-directory "${SCRIPT_ROOT}" "$@"
+}
+
 # ── Vérifications préalables ─────────────────────────────────────
-log_info "Vérification des prérequis..."
+[[ $EUID -eq 0 ]] || log_error "Ce script doit être lancé en root : sudo bash scripts/install.sh"
 
-[[ $EUID -eq 0 ]] || log_error "Ce script doit être lancé en root ou avec sudo."
-
-if [ ! -f ".env" ]; then
+if [ ! -f "${SCRIPT_ROOT}/.env" ]; then
     log_warning "Fichier .env introuvable. Copie de .env.example..."
-    cp .env.example .env
-    log_warning "IMPORTANT : Edite .env avec tes vraies valeurs avant de continuer."
-    log_warning "Lance : nano .env"
+    cp "${SCRIPT_ROOT}/.env.example" "${SCRIPT_ROOT}/.env"
+    echo ""
+    echo -e "${YELLOW}══════════════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}  IMPORTANT : Remplis le fichier .env avant de continuer${NC}"
+    echo -e "${YELLOW}  Lance : nano ${SCRIPT_ROOT}/.env${NC}"
+    echo -e "${YELLOW}══════════════════════════════════════════════════════${NC}"
     exit 1
 fi
 
-# ── Mise à jour système ─────────────────────────────────────────
+echo ""
+echo "══════════════════════════════════════════════════════"
+echo "   CodeLab Monitoring Stack — Démarrage installation"
+echo "══════════════════════════════════════════════════════"
+echo ""
+
+# ── Mise à jour système ──────────────────────────────────────────
 log_info "Mise à jour des paquets système..."
 apt-get update -qq
 apt-get upgrade -y -qq
+apt-get install -y -qq curl wget git unzip apt-transport-https ca-certificates gnupg lsb-release
+log_success "Système mis à jour."
 
-# ── Installation Docker ─────────────────────────────────────────
+# ── Installation Docker ──────────────────────────────────────────
 if ! command -v docker &>/dev/null; then
-    log_info "Installation de Docker..."
+    log_info "Installation de Docker Engine..."
+    # Supprimer Docker Snap s'il existe
+    if snap list docker &>/dev/null 2>&1; then
+        log_warning "Docker Snap détecté — suppression..."
+        snap remove docker || true
+    fi
     curl -fsSL https://get.docker.com | bash
     systemctl enable docker
     systemctl start docker
-    log_success "Docker installé."
+    log_success "Docker installé : $(docker --version)"
 else
     log_success "Docker déjà installé : $(docker --version)"
 fi
 
-# ── Installation Docker Compose ─────────────────────────────────
-if ! docker compose version &>/dev/null; then
-    log_info "Installation de Docker Compose plugin..."
+# ── Docker Compose plugin ────────────────────────────────────────
+if ! docker compose version &>/dev/null 2>&1; then
+    log_info "Installation du plugin Docker Compose..."
     apt-get install -y docker-compose-plugin
     log_success "Docker Compose installé."
 else
-    log_success "Docker Compose déjà installé : $(docker compose version)"
+    log_success "Docker Compose : $(docker compose version)"
 fi
 
-# ── Firewall UFW ────────────────────────────────────────────────
+# ── Firewall UFW ─────────────────────────────────────────────────
 log_info "Configuration du firewall UFW..."
 apt-get install -y ufw -qq
 
 ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
-
-# SSH (changer le port si tu utilises un port custom)
-ufw allow 22/tcp comment 'SSH'
-
-# HTTP/HTTPS pour Nginx Proxy Manager
-ufw allow 80/tcp comment 'HTTP'
-ufw allow 443/tcp comment 'HTTPS'
-
-# BLOQUER l'accès direct aux services (ils passent par Nginx)
-# Loki, Prometheus, Grafana, etc. sont sur 127.0.0.1 uniquement
-
+ufw allow 22/tcp   comment 'SSH'
+ufw allow 80/tcp   comment 'HTTP'
+ufw allow 443/tcp  comment 'HTTPS'
+ufw allow 81/tcp   comment 'NPM Admin (temporaire)'
 ufw --force enable
-log_success "Firewall configuré."
+log_success "UFW configuré."
 
-# ── Fail2Ban ────────────────────────────────────────────────────
+# ── Règles iptables OCI ──────────────────────────────────────────
+# Oracle Cloud bloque le trafic via iptables en plus du Security Group
+log_info "Configuration iptables pour Oracle Cloud..."
+apt-get install -y iptables-persistent netfilter-persistent -qq || true
+
+iptables -I INPUT  -p tcp --dport 80  -j ACCEPT 2>/dev/null || true
+iptables -I INPUT  -p tcp --dport 443 -j ACCEPT 2>/dev/null || true
+iptables -I INPUT  -p tcp --dport 81  -j ACCEPT 2>/dev/null || true
+iptables -I FORWARD -j ACCEPT         2>/dev/null || true
+
+# Sauvegarder les règles iptables
+netfilter-persistent save 2>/dev/null || iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+log_success "iptables OCI configuré."
+
+# ── Fail2Ban ─────────────────────────────────────────────────────
 log_info "Installation de Fail2Ban..."
 apt-get install -y fail2ban -qq
 cat > /etc/fail2ban/jail.local << 'EOF'
@@ -103,87 +123,91 @@ systemctl enable fail2ban
 systemctl restart fail2ban
 log_success "Fail2Ban configuré."
 
-# ── Création dossiers ───────────────────────────────────────────
+# ── Création des dossiers nécessaires ────────────────────────────
 log_info "Création de la structure de dossiers..."
-mkdir -p nginx_proxy/{data,letsencrypt}
-mkdir -p secrets
+mkdir -p "${SCRIPT_ROOT}/nginx_proxy/data"
+mkdir -p "${SCRIPT_ROOT}/nginx_proxy/letsencrypt"
+mkdir -p "${SCRIPT_ROOT}/secrets"
+chmod 700 "${SCRIPT_ROOT}/secrets"
+log_success "Dossiers créés."
 
-# ── Mot de passe Portainer ──────────────────────────────────────
-if [ ! -f "secrets/portainer_password.txt" ]; then
+# ── Mot de passe Portainer ───────────────────────────────────────
+if [ ! -f "${SCRIPT_ROOT}/secrets/portainer_password.txt" ]; then
     log_info "Génération du mot de passe Portainer..."
-    if command -v htpasswd &>/dev/null; then
-        read -s -p "Mot de passe Portainer admin : " PORTAINER_PASS
-        echo
-        htpasswd -nbB admin "$PORTAINER_PASS" | cut -d":" -f2 > secrets/portainer_password.txt
-    else
-        apt-get install -y apache2-utils -qq
-        read -s -p "Mot de passe Portainer admin : " PORTAINER_PASS
-        echo
-        htpasswd -nbB admin "$PORTAINER_PASS" | cut -d":" -f2 > secrets/portainer_password.txt
-    fi
+    apt-get install -y apache2-utils -qq
+    echo ""
+    read -s -p "  Choisis un mot de passe pour Portainer admin : " PORTAINER_PASS
+    echo ""
+    htpasswd -nbB admin "$PORTAINER_PASS" | cut -d":" -f2 > "${SCRIPT_ROOT}/secrets/portainer_password.txt"
     log_success "Mot de passe Portainer généré."
 fi
+chmod 600 "${SCRIPT_ROOT}/secrets/portainer_password.txt"
 
-chmod 600 secrets/portainer_password.txt
+# ── Secret SMTP pour Alertmanager ───────────────────────────────
+log_info "Synchronisation du secret SMTP..."
+bash "${SCRIPT_ROOT}/scripts/sync-secrets-from-env.sh"
+log_success "Secret SMTP synchronisé."
 
-# ── Fichier retention-overrides.yml ─────────────────────────────
-if [ ! -f "configs/retention-overrides.yml" ]; then
-    log_warning "configs/retention-overrides.yml manquant — utilisation du fichier d'exemple."
-fi
-
-# ── Secrets Alertmanager (mot de passe SMTP depuis .env uniquement) ─
-log_info "Synchronisation secrets (Alertmanager SMTP) depuis .env..."
-bash scripts/sync-secrets-from-env.sh
-
-# ── Démarrage des services ───────────────────────────────────────
-log_info "Démarrage de la stack monitoring..."
+# ── Pull des images Docker ───────────────────────────────────────
+log_info "Téléchargement des images Docker (peut prendre quelques minutes)..."
 dc pull
-dc up -d --remove-orphans
+log_success "Images téléchargées."
 
-# ── Vérification santé ───────────────────────────────────────────
+# ── Démarrage de la stack ────────────────────────────────────────
+log_info "Démarrage de tous les services..."
+dc up -d --remove-orphans
+log_success "Services démarrés."
+
+# ── Attente et vérification ──────────────────────────────────────
 log_info "Attente du démarrage des services (60 secondes)..."
 sleep 60
 
-log_info "Vérification de la santé des services..."
-SERVICES=("loki" "prometheus" "grafana" "alertmanager")
-ALL_OK=true
+log_info "Vérification de l'état des services..."
+echo ""
+dc ps
+echo ""
 
-for service in "${SERVICES[@]}"; do
+ALL_OK=true
+for service in loki prometheus grafana alertmanager; do
     STATUS=$(dc ps --format "{{.Status}}" "$service" 2>/dev/null || echo "absent")
     if [[ "$STATUS" == *"healthy"* ]] || [[ "$STATUS" == *"Up"* ]]; then
-        log_success "$service : $STATUS"
+        log_success "$service : OK"
     else
         log_warning "$service : $STATUS"
         ALL_OK=false
     fi
 done
 
-# ── Résumé ──────────────────────────────────────────────────────
+# ── Résumé final ─────────────────────────────────────────────────
+SERVER_IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo "══════════════════════════════════════════════════════"
-echo "  CodeLab Monitoring Stack — Installation terminée"
+echo "   CodeLab Monitoring Stack — Installation terminée"
 echo "══════════════════════════════════════════════════════"
 echo ""
-echo "  Prochaines étapes :"
-echo "  1. Configurer Nginx Proxy Manager via http://$(hostname -I | awk '{print $1}'):81"
-echo "     - Email par défaut : admin@example.com"
-echo "     - Mot de passe : changeme"
-echo "     - CHANGER immédiatement après la 1ère connexion"
+echo "  ⚠️  IMPORTANT — Ouvrir les ports dans la console OCI :"
+echo "     Console OCI → Networking → VCN → Security Lists"
+echo "     Ajouter Ingress Rules : TCP 80, 443, 81"
 echo ""
-echo "  2. Créer les Proxy Hosts dans NPM :"
-echo "     monitoring.codelab.bj → grafana:3000"
-echo "     loki.codelab.bj       → loki:3100 (+ Basic Auth / Access List)"
-echo "     portainer.codelab.bj  → portainer:9443"
+echo "  Accès Nginx Proxy Manager (config reverse proxy + SSL) :"
+echo "     http://${SERVER_IP}:81"
+echo "     Email    : admin@example.com"
+echo "     Password : changeme  ← CHANGER IMMÉDIATEMENT"
 echo ""
-echo "  3. Accéder à Grafana : https://monitoring.codelab.bj"
-echo "     (après configuration NPM + DNS)"
+echo "  Proxy Hosts à créer dans NPM :"
+echo "     monitoring.codelab.bj  →  grafana:3000    (SSL Let's Encrypt)"
+echo "     loki.codelab.bj        →  loki:3100       (SSL + Basic Auth)"
+echo "     portainer.codelab.bj   →  portainer:9443  (SSL Let's Encrypt)"
 echo ""
-echo "  4. Installer Promtail + Node Exporter sur les serveurs distants :"
-echo "     bash scripts/install-agent.sh"
+echo "  Commandes utiles :"
+echo "     bash scripts/manage.sh status"
+echo "     bash scripts/manage.sh logs grafana"
+echo "     bash scripts/manage.sh logs loki"
 echo ""
 
 if $ALL_OK; then
     log_success "Tous les services sont opérationnels."
 else
-    log_warning "Certains services ne sont pas encore prêts. Lance : bash ${SCRIPT_ROOT}/scripts/dc ps"
+    log_warning "Certains services ne sont pas encore prêts."
+    echo "  → Lance : bash scripts/manage.sh logs <service> pour diagnostiquer"
 fi
