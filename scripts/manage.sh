@@ -67,6 +67,8 @@ post_test_alert_to_alertmanager() {
     local severity="$1"
     local tmp http_code
     tmp=$(mktemp)
+    local ends_at
+    ends_at=$(date -u -d '+10 minutes' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v+10M '+%Y-%m-%dT%H:%M:%SZ')
     if ! http_code=$(curl -sS -o "$tmp" -w "%{http_code}" -X POST "${ALERTMANAGER_API_V2}" \
         -H 'Content-Type: application/json' \
         -d "[{
@@ -78,7 +80,8 @@ post_test_alert_to_alertmanager() {
             \"annotations\": {
                 \"summary\": \"Alerte de test CodeLab Monitoring\",
                 \"description\": \"Test depuis manage.sh (severity=${severity}).\"
-            }
+            },
+            \"endsAt\": \"${ends_at}\"
         }]"); then
         rm -f "$tmp"
         echo -e "${RED}Échec : impossible de joindre Alertmanager (${ALERTMANAGER_API_V2})${NC}" >&2
