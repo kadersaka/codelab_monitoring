@@ -25,6 +25,7 @@ services:
     volumes:
       - ./configs/loki.yml:/etc/loki/config.yml:ro
       - ./configs/retention-overrides.yml:/etc/loki/retention-overrides.yml:ro
+      - ./configs/loki-rules:/etc/loki/rules/fake:ro
       - loki_data:/loki
     ports:
       - "127.0.0.1:3100:3100"

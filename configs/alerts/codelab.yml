@@ -36,6 +36,24 @@ groups:
             Taux actuel : {{ printf "%.3f" $value }} req/s
             🔍 Voir les logs : https://monitoring.codelab.bj/explore?orgId=1&left=%7B%22datasource%22:%22loki-cenof%22,%22queries%22:%5B%7B%22expr%22:%22%7Bapp%3D%5C%22cenof%5C%22,job%3D%5C%22django%5C%22%7D%20%7C%3D%20%5C%22ERROR%5C%22%22%7D%5D%7D
 
+  - name: codelab.loki
+    rules:
+
+      - alert: ErreursLogsDjango
+        expr: |
+          sum by (app, server) (
+            count_over_time({job="django"} |= "ERROR" [5m])
+          ) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "⚠️ Erreurs détectées dans les logs Django — {{ $labels.app }}"
+          description: |
+            Des erreurs ont été détectées dans les logs de {{ $labels.app }} sur {{ $labels.server }}.
+            🔍 Voir les logs : https://monitoring.codelab.bj/explore?orgId=1&left=%7B%22datasource%22:%22loki-cenof%22,%22queries%22:%5B%7B%22expr%22:%22%7Bapp%3D%5C%22{{ $labels.app }}%5C%22,job%3D%5C%22django%5C%22%7D%20%7C%3D%20%5C%22ERROR%5C%22%22%7D%5D%7D
+
   - name: codelab.ssl
     rules:
 

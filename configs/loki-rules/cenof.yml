@@ -1,0 +1,16 @@
+groups:
+  - name: cenof.errors
+    rules:
+      - alert: ErreursLogsDjangoCenof
+        expr: |
+          sum(count_over_time({app="cenof", job="django"} |= "ERROR" [5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+          project: cenof
+        annotations:
+          summary: "⚠️ Erreurs Django détectées — Cenof"
+          description: |
+            Des erreurs ont été détectées dans les logs Django de Cenof.
+            🔍 Voir les logs : https://monitoring.codelab.bj/explore?orgId=1&left=%7B%22datasource%22:%22loki-cenof%22,%22queries%22:%5B%7B%22expr%22:%22%7Bapp%3D%5C%22cenof%5C%22,job%3D%5C%22django%5C%22%7D%20%7C%3D%20%5C%22ERROR%5C%22%22%7D%5D%7D
