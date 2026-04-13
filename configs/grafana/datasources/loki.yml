@@ -48,6 +48,19 @@ datasources:
       httpHeaderValue1: 'peramix'
     editable: false
 
+  - name: Loki — Cenof
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki-cenof
+    jsonData:
+      maxLines: 5000
+      timeout: 60
+      httpHeaderName1: 'X-Scope-OrgID'
+    secureJsonData:
+      httpHeaderValue1: 'cenof'
+    editable: false
+
   # Ajouter un bloc par nouveau projet :
   # - name: Loki — ProjetB
   #   uid: loki-projetb

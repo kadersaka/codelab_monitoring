@@ -24,6 +24,12 @@ overrides:
     ingestion_rate_mb: 5
     ingestion_burst_size_mb: 10
 
+  # Cenof
+  cenof:
+    retention_period: 90d
+    ingestion_rate_mb: 5
+    ingestion_burst_size_mb: 10
+
   # Peramix (le serveur de monitoring lui-même)
   peramix:
     retention_period: 30d           # 1 mois suffit pour l'infra
