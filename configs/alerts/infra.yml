@@ -10,7 +10,7 @@ groups:
     rules:
 
       - alert: ServeurInjoignable
-        expr: up == 0
+        expr: up{job!~"django_.*"} == 0
         for: 1m
         labels:
           severity: critical

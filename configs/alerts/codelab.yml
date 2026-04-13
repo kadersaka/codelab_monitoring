@@ -16,7 +16,9 @@ groups:
           category: availability
         annotations:
           summary: "🔴 App Django indisponible : {{ $labels.project }}"
-          description: "L'application {{ $labels.project }} sur {{ $labels.server }} ne répond plus."
+          description: |
+            L'application {{ $labels.project }} sur {{ $labels.server }} ne répond plus.
+            🔍 Voir les logs : https://monitoring.codelab.bj/explore?orgId=1&left=%7B%22datasource%22:%22loki-{{ $labels.project }}%22,%22queries%22:%5B%7B%22expr%22:%22%7Bapp%3D%5C%22{{ $labels.project }}%5C%22%7D%20%7C%3D%20%5C%22ERROR%5C%22%22%7D%5D%7D
 
       - alert: ErreursDjango5xx
         expr: |

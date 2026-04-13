@@ -89,6 +89,7 @@ receivers:
           <p><b>{{ .Annotations.summary }}</b><br>
           {{ .Annotations.description }}</p>
           <p>Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}</p>
+          <p><a href="https://monitoring.codelab.bj/explore?orgId=1&left=%7B%22datasource%22:%22loki-cenof%22,%22queries%22:%5B%7B%22expr%22:%22%7Bapp%3D%5C%22cenof%5C%22%7D%20%7C%3D%20%5C%22ERROR%5C%22%22%7D%5D%7D">🔍 Voir les logs dans Grafana</a></p>
           {{ end }}
 
   # Alertes critiques PayGate : Email + Telegram
