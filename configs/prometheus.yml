@@ -58,23 +58,6 @@ scrape_configs:
         labels:
           server: peramix
 
-  # ══════════════════════════════════════════════════════════════
-  # SERVEURS DISTANTS
-  # Ajouter chaque nouveau serveur ici
-  # Prérequis : Node Exporter installé sur le serveur distant
-  # ══════════════════════════════════════════════════════════════
-
-  # ── Node Exporter — Serveur OCI PayGate ───────────────────────
-  # Décommente et remplace l’IP quand Node Exporter est en place (hôte valide obligatoire).
-  # - job_name: node_oci_paygate
-  #   static_configs:
-  #     - targets: ['A.B.C.D:9100']
-  #       labels:
-  #         server: oci-paygate
-  #         project: paygate
-  #         role: application
-
-  # -- Node Exporter - Cenof
   - job_name: node_cenof
     static_configs:
       - targets: ['77.37.87.37:9100']
@@ -82,37 +65,6 @@ scrape_configs:
           server: cenof-server
           project: cenof
           role: application
-
-  # ── Node Exporter — Serveur Hostinger Projet B ────────────────
-  # - job_name: node_hostinger_projetb
-  #   static_configs:
-  #     - targets: ['A.B.C.D:9100']
-  #       labels:
-  #         server: hostinger-projetb
-  #         project: projetb
-  #         role: application
-
-  # ── Node Exporter — Serveur Hostinger Projet C ────────────────
-  # - job_name: node_hostinger_projetc
-  #   static_configs:
-  #     - targets: ['<IP_SERVEUR_HOSTINGER_C>:9100']
-  #       labels:
-  #         server: hostinger-projetc
-  #         project: projetc
-
-  # ══════════════════════════════════════════════════════════════
-  # MÉTRIQUES DJANGO (django-prometheus)
-  # Endpoint /metrics exposé par chaque app Django
-  # ══════════════════════════════════════════════════════════════
-
-  # ── Django PayGate ────────────────────────────────────────────
-  # - job_name: django_paygate
-  #   static_configs:
-  #     - targets: ['A.B.C.D:8000']
-  #       labels:
-  #         server: oci-paygate
-  #         project: paygate
-  #         app: django
 
   # ── Django Cenof ──────────────────────────────────────────────
   - job_name: django_cenof
@@ -122,31 +74,40 @@ scrape_configs:
           server: cenof-server
           project: cenof
           app: django
-    metrics_path: /metrics
-    scheme: https
+  # -- Node Exporter - Cenof (à activer après configuration)
+  # - job_name: node_cenof
+  #   static_configs:
+  #     - targets: ['77.37.87.37:9100']
+  #       labels:
+  #         server: cenof-server
+  #         project: cenof
+  #         role: application  # ── Django Cenof (à activer après configuration)
+  # - job_name: django_cenof
+  #   static_configs:
+  #     - targets: ['api.cenof.finance']
+  #       labels:
+  #         server: cenof-server
+  #         project: cenof
+  #         app: django
   #   metrics_path: /metrics
+  #   scheme: https
 
-  # ── Django Projet B ───────────────────────────────────────────
-  # - job_name: django_projetb
-  #   static_configs:
-  #     - targets: ['<IP_SERVEUR_HOSTINGER_B>:8000']
-  #       labels:
-  #         project: projetb
+  # ── Node Exporter — Blaffa Pay ───────────────────────────────
+  - job_name: node_blaffa_pay
+    static_configs:
+      - targets: ['72.60.47.24:9100']
+        labels:
+          server: blaffa-pay-server
+          project: blaffa_pay
+          role: application
 
-  # ── Redis Exporter — PayGate ──────────────────────────────────
-  # Installer redis_exporter sur le serveur OCI
-  # - job_name: redis_paygate
-  #   static_configs:
-  #     - targets: ['<IP_SERVEUR_OCI>:9121']
-  #       labels:
-  #         server: oci-paygate
-  #         project: paygate
-
-  # ── PostgreSQL Exporter — PayGate ────────────────────────────
-  # Installer postgres_exporter sur le serveur OCI
-  # - job_name: postgres_paygate
-  #   static_configs:
-  #     - targets: ['<IP_SERVEUR_OCI>:9187']
-  #       labels:
-  #         server: oci-paygate
-  #         project: paygate
+  # ── Django Blaffa Pay ─────────────────────────────────────────
+  - job_name: django_blaffa_pay
+    static_configs:
+      - targets: ['connect.api.blaffa.net']
+        labels:
+          server: blaffa-pay-server
+          project: blaffa_pay
+          app: django
+    metrics_path: /metrics/
+    scheme: https

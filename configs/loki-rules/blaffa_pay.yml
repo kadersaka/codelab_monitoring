@@ -1,0 +1,30 @@
+groups:
+  - name: blaffa_pay.errors
+    rules:
+      - alert: ErreursLogsDjangoBlaffaPay
+        expr: |
+          sum(count_over_time({app="blaffa_pay", job="django"} |= "ERROR" [5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+          project: blaffa_pay
+        annotations:
+          summary: "⚠️ Erreurs Django détectées — Blaffa Pay"
+          description: |
+            Des erreurs ont été détectées dans les logs Django de Blaffa Pay.
+            🔍 Voir les logs : https://monitoring.codelab.bj/explore?orgId=1&left=%7B%22datasource%22:%22loki-blaffa-pay%22,%22queries%22:%5B%7B%22expr%22:%22%7Bapp%3D%5C%22blaffa_pay%5C%22%7D%20%7C%3D%20%5C%22ERROR%5C%22%22%7D%5D%7D
+
+      - alert: SecurityAlertBlaffaPay
+        expr: |
+          sum(count_over_time({app="blaffa_pay", log_type="security"} [5m])) > 5
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+          project: blaffa_pay
+        annotations:
+          summary: "🔴 Alerte sécurité — Blaffa Pay"
+          description: |
+            Activité suspecte détectée dans les logs sécurité de Blaffa Pay.
+            🔍 Voir les logs : https://monitoring.codelab.bj/explore?orgId=1&left=%7B%22datasource%22:%22loki-blaffa-pay%22,%22queries%22:%5B%7B%22expr%22:%22%7Bapp%3D%5C%22blaffa_pay%5C%22,log_type%3D%5C%22security%5C%22%7D%22%7D%5D%7D

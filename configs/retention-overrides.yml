@@ -24,6 +24,13 @@ overrides:
     ingestion_rate_mb: 5
     ingestion_burst_size_mb: 10
 
+  # Blaffa Pay — fintech, rétention longue
+  blaffa_pay:
+    retention_period: 365d
+    ingestion_rate_mb: 20
+    ingestion_burst_size_mb: 40
+    max_streams_per_user: 5000
+
   # Cenof
   cenof:
     retention_period: 90d

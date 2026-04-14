@@ -1,0 +1,191 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /tmp/promtail-positions-blaffa_pay.yaml
+  sync_period: 10s
+
+clients:
+  - url: https://loki.codelab.bj/loki/api/v1/push
+    tenant_id: blaffa_pay
+    basic_auth:
+      username: blaffa_pay
+      password: CodeLab1992
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 30s
+    backoff_config:
+      min_period: 500ms
+      max_period: 10m
+      max_retries: 20
+
+scrape_configs:
+
+  # ── loki.log — fichier principal structuré (priorité) ──────────
+  - job_name: django
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: django
+          log_type: loki
+          env: production
+          __path__: /root/connect_pro/logs/loki.log
+    pipeline_stages:
+      - regex:
+          expression: 'level=(?P<level>\w+) ts=(?P<ts>[^\s]+) logger=(?P<logger>[^\s]+) process=(?P<process>\d+) msg=(?P<msg>.*)'
+      - labels:
+          level:
+          logger:
+      - match:
+          selector: '{level="DEBUG"}'
+          action: drop
+          drop_counter_reason: debug_dropped
+
+  # ── transactions.log ───────────────────────────────────────────
+  - job_name: transactions
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: django
+          log_type: transactions
+          env: production
+          __path__: /root/connect_pro/logs/transactions.log
+    pipeline_stages:
+      - regex:
+          expression: '(?P<ts>[^\|]+) \| (?P<level>\w+) \| (?P<logger>[^\|]+) \| (?P<func>[^\|]+) \| (?P<msg>.*)'
+      - labels:
+          level:
+          logger:
+
+  # ── security.log ───────────────────────────────────────────────
+  - job_name: security
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: django
+          log_type: security
+          env: production
+          __path__: /root/connect_pro/logs/security.log
+    pipeline_stages:
+      - regex:
+          expression: 'SECURITY \| (?P<ts>[^\|]+) \| (?P<level>\w+) \| (?P<msg>.*)'
+      - labels:
+          level:
+
+  # ── celery.log ─────────────────────────────────────────────────
+  - job_name: celery
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: celery
+          log_type: celery
+          env: production
+          __path__: /root/connect_pro/logs/celery.log
+    pipeline_stages:
+      - regex:
+          expression: '\[(?P<ts>[^\]]+)\] (?P<level>\w+) (?P<logger>[^:]+): (?P<msg>.*)'
+      - labels:
+          level:
+          logger:
+
+  # ── audit.log ──────────────────────────────────────────────────
+  - job_name: audit
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: django
+          log_type: audit
+          env: production
+          __path__: /root/connect_pro/logs/audit.log
+    pipeline_stages:
+      - regex:
+          expression: '\[AUDIT\] \| (?P<ts>[^\|]+) \| (?P<level>\w+) \| (?P<logger>[^\|]+) \| (?P<msg>.*)'
+      - labels:
+          level:
+          logger:
+
+  # ── django_errors.log ──────────────────────────────────────────
+  - job_name: django_errors
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: django
+          log_type: errors
+          level: ERROR
+          env: production
+          __path__: /root/connect_pro/logs/django_errors.log
+
+  # ── betting_transactions.log ───────────────────────────────────
+  - job_name: betting
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: django
+          log_type: betting_transactions
+          env: production
+          __path__: /root/connect_pro/logs/betting_transactions.log
+    pipeline_stages:
+      - regex:
+          expression: '\[(?P<ts>[^\]]+)\] (?P<level>\w+) \| (?P<logger>[^\|]+) \| (?P<msg>.*)'
+      - labels:
+          level:
+          logger:
+
+  # ── gateway_notify.log ─────────────────────────────────────────
+  - job_name: gateway
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: django
+          log_type: gateway_notify
+          env: production
+          __path__: /root/connect_pro/logs/gateway_notify.log
+
+  # ── auto_recharge.log ──────────────────────────────────────────
+  - job_name: auto_recharge
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: django
+          app: blaffa_pay
+          service: celery
+          log_type: auto_recharge
+          env: production
+          __path__: /root/connect_pro/logs/auto_recharge.log
+
+  # ── Logs système ───────────────────────────────────────────────
+  - job_name: syslog
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: syslog
+          app: blaffa_pay
+          server: blaffa-pay-server
+          __path__: /var/log/syslog
+
+  - job_name: auth
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: auth
+          app: blaffa_pay
+          server: blaffa-pay-server
+          __path__: /var/log/auth.log
