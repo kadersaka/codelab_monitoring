@@ -172,7 +172,7 @@
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
       "datasource": { "type": "loki", "uid": "loki-blaffa-pay" },
       "targets": [{
-        "expr": "{app=\"blaffa_pay\", job=~\"$job\", filename=~\"$filename\"}",
+        "expr": "{app=\"blaffa_pay\", job=~\"$job\", filename=~\"$filename\"} |~ \"$search\"",
         "refId": "A"
       }],
       "options": {
@@ -209,6 +209,14 @@
         "includeAll": true,
         "allValue": ".*",
         "sort": 1
+      },
+      {
+        "name": "search",
+        "label": "Recherche",
+        "type": "textbox",
+        "query": "",
+        "current": { "selected": false, "text": "", "value": "" },
+        "hide": 0
       }
     ]
   },
