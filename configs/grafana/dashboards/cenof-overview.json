@@ -170,7 +170,7 @@
       "title": "Logs Django — Cenof",
       "type": "logs",
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
-      "datasource": { "type": "loki", "uid": "b13179c3-908c-4f15-b2bf-e0b0eff176b9" },
+      "datasource": { "type": "loki", "uid": "loki-cenof" },
       "targets": [{
         "expr": "{job=~\"$job\", app=\"cenof\", filename=~\"$filename\"}",
         "refId": "A"
@@ -192,7 +192,7 @@
         "name": "logger",
         "label": "Logger",
         "type": "query",
-        "datasource": { "type": "loki", "uid": "b13179c3-908c-4f15-b2bf-e0b0eff176b9" },
+        "datasource": { "type": "loki", "uid": "loki-cenof" },
         "query": "label_values({job=\"django\", app=\"cenof\"}, logger)",
         "refresh": 2,
         "multi": true,
@@ -214,7 +214,7 @@
         "name": "filename",
         "label": "Fichier",
         "type": "query",
-        "datasource": { "type": "loki", "uid": "b13179c3-908c-4f15-b2bf-e0b0eff176b9" },
+        "datasource": { "type": "loki", "uid": "loki-cenof" },
         "query": "label_values({app=\"cenof\"}, filename)",
         "refresh": 2,
         "multi": true,
