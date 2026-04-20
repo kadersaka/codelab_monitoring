@@ -66,8 +66,8 @@ compactor:
 # ── Limites globales ─────────────────────────────────────────────
 limits_config:
   retention_period: 90d
-  ingestion_rate_mb: 16
-  ingestion_burst_size_mb: 32
+  ingestion_rate_mb: 32
+  ingestion_burst_size_mb: 64
   max_query_series: 5000
   max_query_lookback: 365d
   max_query_length: 721h
