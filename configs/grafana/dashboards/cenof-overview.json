@@ -172,7 +172,7 @@
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
       "datasource": { "type": "loki", "uid": "loki-cenof" },
       "targets": [{
-        "expr": "{job=~\"$job\", app=\"cenof\", filename=~\"$filename\"}",
+        "expr": "{job=~\"$job\", app=\"cenof\", filename=~\"$filename\"} |~ \"$search\"",
         "refId": "A"
       }],
       "options": {
@@ -188,18 +188,6 @@
   ],
   "templating": {
     "list": [
-      {
-        "name": "logger",
-        "label": "Logger",
-        "type": "query",
-        "datasource": { "type": "loki", "uid": "loki-cenof" },
-        "query": "label_values({job=\"django\", app=\"cenof\"}, logger)",
-        "refresh": 2,
-        "multi": true,
-        "includeAll": true,
-        "allValue": ".*",
-        "sort": 1
-      },
       {
         "name": "job",
         "label": "Source",
@@ -221,6 +209,14 @@
         "includeAll": true,
         "allValue": ".*",
         "sort": 1
+      },
+      {
+        "name": "search",
+        "label": "Recherche",
+        "type": "textbox",
+        "query": "",
+        "current": { "selected": false, "text": "", "value": "" },
+        "hide": 0
       }
     ]
   },
