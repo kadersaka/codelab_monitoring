@@ -13,13 +13,13 @@ clients:
     basic_auth:
       username: blaffa_pay
       password: CodeLab1992
-    batchwait: 1s
-    batchsize: 1048576
-    timeout: 30s
+    batchwait: 2s
+    batchsize: 524288
+    timeout: 60s
     backoff_config:
-      min_period: 500ms
-      max_period: 10m
-      max_retries: 20
+      min_period: 1s
+      max_period: 5m
+      max_retries: 10
 
 scrape_configs:
 
