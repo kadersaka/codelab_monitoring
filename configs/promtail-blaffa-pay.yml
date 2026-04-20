@@ -172,15 +172,6 @@ scrape_configs:
           __path__: /root/connect_pro/logs/auto_recharge.log
 
   # ── Logs système ───────────────────────────────────────────────
-  - job_name: syslog
-    static_configs:
-      - targets: [localhost]
-        labels:
-          job: syslog
-          app: blaffa_pay
-          server: blaffa-pay-server
-          __path__: /var/log/syslog
-
   - job_name: auth
     static_configs:
       - targets: [localhost]
