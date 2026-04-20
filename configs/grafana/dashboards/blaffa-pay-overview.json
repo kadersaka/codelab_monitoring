@@ -172,7 +172,7 @@
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
       "datasource": { "type": "loki", "uid": "loki-blaffa-pay" },
       "targets": [{
-        "expr": "{app=\"blaffa_pay\", job=~\"$job\", log_type=~\"$log_type\"}",
+        "expr": "{app=\"blaffa_pay\", job=~\"$job\", filename=~\"$filename\"}",
         "refId": "A"
       }],
       "options": {
@@ -199,11 +199,11 @@
         "current": { "selected": true, "text": "All", "value": "$__all" }
       },
       {
-        "name": "log_type",
+        "name": "filename",
         "label": "Fichier",
         "type": "query",
         "datasource": { "type": "loki", "uid": "loki-blaffa-pay" },
-        "query": "label_values({app=\"blaffa_pay\"}, log_type)",
+        "query": "label_values({app=\"blaffa_pay\"}, filename)",
         "refresh": 2,
         "multi": true,
         "includeAll": true,
