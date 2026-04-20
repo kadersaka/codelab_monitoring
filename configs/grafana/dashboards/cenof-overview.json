@@ -172,7 +172,7 @@
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
       "datasource": { "type": "loki", "uid": "b13179c3-908c-4f15-b2bf-e0b0eff176b9" },
       "targets": [{
-        "expr": "{job=\"django\", app=\"cenof\", logger=~\"$logger\"}",
+        "expr": "{job=~\"$job\", app=\"cenof\", filename=~\"$filename\"}",
         "refId": "A"
       }],
       "options": {
@@ -194,6 +194,28 @@
         "type": "query",
         "datasource": { "type": "loki", "uid": "b13179c3-908c-4f15-b2bf-e0b0eff176b9" },
         "query": "label_values({job=\"django\", app=\"cenof\"}, logger)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "sort": 1
+      },
+      {
+        "name": "job",
+        "label": "Source",
+        "type": "custom",
+        "query": "django,nginx_access,nginx_error,syslog,auth",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "filename",
+        "label": "Fichier",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "b13179c3-908c-4f15-b2bf-e0b0eff176b9" },
+        "query": "label_values({app=\"cenof\"}, filename)",
         "refresh": 2,
         "multi": true,
         "includeAll": true,
